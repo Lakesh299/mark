@@ -1,992 +1,489 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arbitrage Betting Calculator</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            touch-action: manipulation;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            animation: slideIn 0.6s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: pulse 4s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.5; }
-            50% { transform: scale(1.1) rotate(180deg); opacity: 0.8; }
-        }
-        
-        h1 {
-            margin: 0;
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            position: relative;
-            z-index: 1;
-        }
-        
-        .content {
-            padding: clamp(15px, 3vw, 30px);
-        }
-        
-        .instructions {
-            background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
-            padding: clamp(15px, 3vw, 25px);
-            border-radius: 15px;
-            margin-bottom: 25px;
-            border-left: 4px solid #2196f3;
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.1);
-            position: relative;
-            z-index: 10;
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        
-        .instructions h3 {
-            margin: 0 0 15px 0;
-            color: #1976d2;
-            font-size: clamp(1rem, 2.5vw, 1.2rem);
-        }
-        
-        .instructions ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-        
-        .instructions li {
-            margin: 8px 0;
-            line-height: 1.5;
-            font-size: clamp(0.9rem, 2vw, 1rem);
-        }
-        
-        .spreadsheet {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2px;
-            background: linear-gradient(135deg, #34495e, #2c3e50);
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 25px 0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .cell {
-            background: white;
-            padding: clamp(8px, 2vw, 15px);
-            font-size: clamp(0.8rem, 2vw, 1rem);
-            display: flex;
-            align-items: center;
-            min-height: 50px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .cell::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-            transition: left 0.5s;
-        }
-        
-        .cell:hover::before {
-            left: 100%;
-        }
-        
-        .label {
-            background: linear-gradient(135deg, #ecf0f1, #d5dbdb);
-            font-weight: 600;
-            color: #2c3e50;
-            justify-content: flex-start;
-        }
-        
-        .input {
-            background: #fff;
-            padding: 0;
-        }
-        
-        .input input, .input select {
-            width: 100%;
-            border: none;
-            padding: clamp(8px, 2vw, 12px);
-            font-size: clamp(0.9rem, 2vw, 1rem);
-            background: transparent;
-            outline: none;
-            transition: all 0.3s ease;
-            border-radius: 8px;
-        }
-        
-        .input input:focus, .input select:focus {
-            background: linear-gradient(135deg, #ebf3fd, #f8fbff);
-            box-shadow: inset 0 0 0 2px #3498db;
-            transform: scale(1.02);
-        }
-        
-        .input input:hover, .input select:hover {
-            background: rgba(52, 152, 219, 0.05);
-        }
-        
-        .calculation {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            color: #495057;
-            font-weight: 500;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        
-        .calculation:hover {
-            background: linear-gradient(135deg, #e9ecef, #dee2e6);
-            transform: scale(1.02);
-        }
-        
-        .output {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            font-weight: 700;
-            color: #155724;
-            justify-content: center;
-            font-size: clamp(0.9rem, 2vw, 1.1rem);
-            animation: valueUpdate 0.5s ease;
-        }
-        
-        @keyframes valueUpdate {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); background: linear-gradient(135deg, #fff3cd, #ffeaa7); }
-            100% { transform: scale(1); }
-        }
-        
-        .section-header {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            font-weight: 700;
-            text-align: center;
-            grid-column: 1 / -1;
-            font-size: clamp(1rem, 2.5vw, 1.2rem);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            justify-content: center;
-        }
-        
-        .arbitrage-yes {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            color: #155724;
-            font-weight: 700;
-            justify-content: center;
-            animation: pulse-green 2s infinite;
-        }
-        
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 5px rgba(21, 87, 36, 0.3); }
-            50% { box-shadow: 0 0 20px rgba(21, 87, 36, 0.6); }
-        }
-        
-        .arbitrage-no {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            color: #721c24;
-            font-weight: 700;
-            justify-content: center;
-            animation: pulse-red 2s infinite;
-        }
-        
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 5px rgba(114, 28, 36, 0.3); }
-            50% { box-shadow: 0 0 20px rgba(114, 28, 36, 0.6); }
-        }
-        
-        .profit-positive {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            color: #155724;
-            font-weight: 700;
-            justify-content: center;
-            position: relative;
-        }
-        
-        .profit-positive::after {
-            content: '📈';
-            margin-left: 8px;
-            animation: bounce 2s infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-        
-        .profit-negative {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            color: #721c24;
-            font-weight: 700;
-            justify-content: center;
-        }
-        
-        .profit-negative::after {
-            content: '📉';
-            margin-left: 8px;
-        }
-        
-        .warning {
-            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-            color: #856404;
-            padding: clamp(10px, 2vw, 15px);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            margin: 15px 0;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
-        /* Mobile Optimizations */
-        @media (max-width: 768px) {
-            body {
-                padding: 5px;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-            
-            .instructions {
-                display: block !important;
-                visibility: visible !important;
-                padding: 25px 20px !important;
-                margin: 15px 0 !important;
-                border-radius: 12px;
-                background: linear-gradient(135deg, #e3f2fd, #f0f8ff) !important;
-                border-left: 4px solid #2196f3;
-                box-shadow: 0 4px 15px rgba(33, 150, 243, 0.15);
-            }
-            
-            .instructions h3 {
-                display: block !important;
-                margin: 0 0 15px 0 !important;
-                color: #1976d2 !important;
-                font-size: 1.1rem !important;
-                font-weight: 600 !important;
-            }
-            
-            .instructions ul {
-                display: block !important;
-                margin: 0 !important;
-                padding-left: 20px !important;
-                list-style: disc !important;
-            }
-            
-            .instructions li {
-                display: list-item !important;
-                margin: 10px 0 !important;
-                line-height: 1.6 !important;
-                font-size: 1rem !important;
-                color: #333 !important;
-            }
-            
-            .instructions li strong {
-                color: #1976d2 !important;
-                font-weight: 600 !important;
-            }
-            
-            .spreadsheet {
-                grid-template-columns: 1fr;
-                gap: 1px;
-                margin-top: 20px;
-            }
-            
-            .section-header {
-                grid-column: 1;
-                margin-top: 15px;
-                border-radius: 8px;
-            }
-            
-            .cell {
-                min-height: 45px;
-                padding: 10px;
-                border-radius: 0;
-            }
-            
-            .label {
-                text-align: center;
-                font-weight: 700;
-                background: linear-gradient(135deg, #34495e, #2c3e50);
-                color: white;
-            }
-            
-            .input, .calculation, .output {
-                text-align: center;
-            }
-            
-            .cell::before, .header::before {
-                display: none; /* Disable animations on mobile */
-            }
-        }
-        
-        /* Tablet Optimizations */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .instructions {
-                display: block !important;
-                visibility: visible !important;
-                padding: 20px !important;
-            }
-            
-            .spreadsheet {
-                grid-template-columns: 2fr 1fr;
-            }
-            
-            .cell {
-                min-height: 55px;
-            }
-        }
-        
-        /* Touch Enhancements */
-        @media (hover: none) and (pointer: coarse) {
-            .cell {
-                min-height: 55px;
-            }
-            
-            .input input, .input select {
-                padding: 15px;
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-            
-            .cell:hover::before {
-                left: -100%; /* Disable hover effects on touch */
-            }
-        }
-        
-        /* High DPI Display Support */
-        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-            .container {
-                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            }
-            
-            h1 {
-                text-shadow: 0 3px 6px rgba(0,0,0,0.4);
-            }
-        }
-        
-        /* Dark Mode Support */
-        @media (prefers-color-scheme: dark) {
-            body {
-                background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            }
-            
-            .container {
-                background: rgba(44, 62, 80, 0.95);
-                color: #ecf0f1;
-            }
-            
-            .cell {
-                background: #2c3e50;
-                color: #ecf0f1;
-            }
-            
-            .label {
-                background: linear-gradient(135deg, #34495e, #2c3e50);
-                color: #ecf0f1;
-            }
-            
-            .input input, .input select {
-                background: #34495e;
-                color: #ecf0f1;
-                border: 1px solid #4a6741;
-            }
-            
-            .input input:focus, .input select:focus {
-                background: linear-gradient(135deg, #34495e, #2c3e50);
-                border-color: #3498db;
-            }
-        }
-        
-        /* Print Styles */
-        @media print {
-            body {
-                background: white;
-                color: black;
-            }
-            
-            .container {
-                background: white;
-                box-shadow: none;
-                border: 2px solid #ccc;
-            }
-            
-            .header {
-                background: #f8f9fa;
-                color: black;
-            }
-            
-            .cell {
-                border: 1px solid #ccc;
-            }
-        }
-        
-        /* Accessibility Improvements */
-        @media (prefers-reduced-motion: reduce) {
-            *, ::before, ::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-        
-        .input input:focus, .input select:focus {
-            outline: 3px solid #3498db;
-            outline-offset: 2px;
-        }
-        
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .cell {
-                border: 2px solid #000;
-            }
-            
-            .label {
-                background: #000;
-                color: #fff;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2-Way Arbitrage Calculator with Draw Protection</title>
+  <style>
+    :root{
+      --card-bg: #ffffff;
+      --blue-1: #3aa0e6;
+      --blue-2: #1f67a8;
+      --dark-input: #2b2f36;
+      --input-text: #ffffff;
+      --muted: #6c7a89;
+      --green-1: #dff4e0;
+      --green-2: #c1eac2;
+      --pink-1: #ffd7dc;
+      --pink-2: #ffb3bf;
+      --red-1: #ffdede;
+      --max-width: 420px;
+      --radius: 18px;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #f4fbff 0%, #edf6ff 100%);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      color: #102030;
+    }
+
+    .page-wrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px 12px;
+      min-height:100vh;
+    }
+    .container{
+      width:100%;
+      max-width:var(--max-width);
+      background:var(--card-bg);
+      border-radius:var(--radius);
+      box-shadow:0 12px 30px rgba(16,24,40,0.12);
+      overflow:hidden;
+      border: 1px solid rgba(21,32,64,0.05);
+    }
+
+    .hero{
+      background: linear-gradient(180deg, var(--blue-1), var(--blue-2));
+      color:white;
+      padding:14px 16px;
+      text-align:center;
+    }
+    .hero h1{
+      margin:0;
+      font-size:1.05rem;
+      line-height:1.2;
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+
+    .panel{
+      padding:0;
+      border-top: 1px solid rgba(16,24,40,0.04);
+    }
+    .panel-title{
+      background: linear-gradient(180deg, #2e83c8, #1f67a8);
+      color:white;
+      font-weight:700;
+      padding:10px 14px;
+      font-size:0.95rem;
+    }
+
+    .instructions{
+      padding:12px 14px 18px;
+    }
+    .instr-list{
+      margin:8px 0 0 0;
+      padding-left:16px;
+      color:var(--muted);
+      font-size:0.88rem;
+    }
+    .instr-list li{ margin:8px 0; }
+
+    .section-button{
+      width:100%;
+      background:linear-gradient(180deg,#2196f3,#1976d2);
+      color:white;
+      border:none;
+      padding:10px 12px;
+      font-weight:700;
+      text-transform:uppercase;
+      font-size:0.9rem;
+      display:block;
+      cursor:default;
+    }
+
+    .form{
+      padding:12px 0 18px;
+      background:linear-gradient(180deg,#f5f9ff,#fbfdff);
+    }
+    .field-label{
+      display:block;
+      background:linear-gradient(180deg,#2b6fa8,#1f4f7a);
+      color:white;
+      font-weight:700;
+      padding:8px 14px;
+      font-size:0.9rem;
+    }
+    .field{
+      padding:10px 14px;
+      background:var(--card-bg);
+      border-bottom:1px solid rgba(16,24,40,0.03);
+    }
+    .field input,
+    .field select{
+      width:100%;
+      display:block;
+      background:var(--dark-input);
+      color:var(--input-text);
+      border:none;
+      padding:12px;
+      font-size:0.95rem;
+      border-radius:6px;
+      box-shadow: inset 0 -2px 6px rgba(0,0,0,0.18);
+    }
+    .field select{ appearance:none; -webkit-appearance:none; }
+
+    .action-btn{
+      margin:14px;
+      width:calc(100% - 28px);
+      background:linear-gradient(180deg,#2ca3ff,#1d78d1);
+      color:white;
+      font-weight:700;
+      padding:10px 14px;
+      border-radius:8px;
+      border:none;
+      font-size:0.95rem;
+    }
+
+    .results, .two-way-results, .draw-protection{
+      padding-bottom:14px;
+    }
+    .result-row{
+      padding:12px 14px;
+      border-top:1px solid rgba(16,24,40,0.03);
+      font-size:0.95rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .result-row.label-only{
+      background:linear-gradient(180deg,#f7fbff,#f4f9ff);
+      color:var(--muted);
+      font-weight:600;
+    }
+    .result-row.value{
+      background:linear-gradient(180deg,var(--green-1),var(--green-2));
+      color:#155724;
+      font-weight:700;
+    }
+    .result-row.profit{
+      background:linear-gradient(180deg,var(--green-1),var(--green-2));
+      color:#155724;
+      font-weight:800;
+      box-shadow: inset 0 -2px 4px rgba(0,0,0,0.03);
+    }
+
+    .result-row.arb-yes{
+      background:linear-gradient(180deg,#dff7e5,#c2efcf);
+      color:#155724;
+      font-weight:700;
+    }
+
+    .result-row.warning{
+      background:linear-gradient(180deg,var(--pink-1),var(--pink-2));
+      color:#7a1f32;
+      font-weight:700;
+    }
+    .result-row.negative{
+      background:linear-gradient(180deg,#fff1f4,#ffdbe0);
+      color:#7a1f32;
+      font-weight:700;
+    }
+
+    /* New profit positive / negative styles */
+    .result-row.new-profit-positive{
+      background:linear-gradient(180deg,var(--green-1),var(--green-2));
+      color:#155724;
+      font-weight:800;
+    }
+    .result-row.new-profit-negative{
+      background:linear-gradient(180deg,var(--pink-1),var(--pink-2));
+      color:#7a1f32;
+      font-weight:800;
+    }
+
+    .footer{
+      padding:10px 14px;
+      text-align:center;
+      color:var(--muted);
+      font-size:0.78rem;
+      border-top:1px solid rgba(16,24,40,0.04);
+    }
+
+    .muted { color: var(--muted); font-size:0.88rem; }
+    .inline-note { font-size:0.82rem; color:var(--muted); margin-top:6px; padding:0 14px; }
+
+    @media (min-width:440px){
+      .page-wrap{ padding:30px; }
+      .container{ border-radius:22px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Arbitrage Betting Calculator</h1>
-        </div>
-        
-        <div class="content">
-            <div class="instructions">
-                <h3>📱 Instructions:</h3>
-                <ul>
-                    <li><strong>Market Type:</strong> Choose 2-way (Win/Lose) or 3-way (Win/Draw/Lose) betting</li>
-                    <li><strong>Odds 1 & 2:</strong> Enter decimal odds for main outcomes (e.g., Team A Win, Team B Win)</li>
-                    <li><strong>Draw Odds:</strong> For 3-way markets or 2-way protection, enter draw/tie odds</li>
-                    <li><strong>Minimum Bet:</strong> Enter minimum bet requirement for any restricted site</li>
-                    <li><strong>Total Stake:</strong> Enter desired total stake (optional; leave blank to use minimum bet approach)</li>
-                    <li><strong>Draw Protection:</strong> In 2-way mode, see how much to bet on draw to protect your arbitrage profit</li>
-                </ul>
-            </div>
-
-
-            <div class="spreadsheet">
-                <!-- Header -->
-                <div class="cell section-header">💰 Input Parameters</div>
-                <div class="cell section-header"></div>
-                
-                <!-- Market Type Selection -->
-                <div class="cell label"><label for="marketType" title="Select the type of betting market">Market Type</label></div>
-                <div class="cell input">
-                    <select id="marketType" onchange="debounceCalculate()">
-                        <option value="2way">⚽ 2-Way (Win/Lose)</option>
-                        <option value="3way">🏆 3-Way (Win/Draw/Lose)</option>
-                    </select>
-                </div>
-                
-                <!-- Inputs -->
-                <div class="cell label"><label for="odds1" title="The odds for the first outcome (e.g., Team A Win)">Odds for Outcome 1</label></div>
-                <div class="cell input"><input type="number" id="odds1" step="0.01" min="0.01" value="2.1" oninput="debounceCalculate()" placeholder="e.g. 1.29"></div>
-                
-                <div class="cell label"><label for="odds2" title="The odds for the second outcome (e.g., Team B Win)">Odds for Outcome 2</label></div>
-                <div class="cell input"><input type="number" id="odds2" step="0.01" min="0.01" value="2.0" oninput="debounceCalculate()" placeholder="e.g. 9.5"></div>
-                
-                <div class="cell label" id="odds3Label"><label for="odds3" title="The odds for a draw/tie outcome (optional in 2-way mode)">Draw/Tie Odds (Optional)</label></div>
-                <div class="cell input" id="odds3Input"><input type="number" id="odds3" step="0.01" min="0.01" value="3.2" oninput="debounceCalculate()" placeholder="e.g. 3.5"></div>
-                
-                <div class="cell label"><label for="minBet" title="The minimum bet required by any betting site">Minimum Bet Requirement</label></div>
-                <div class="cell input"><input type="number" id="minBet" step="0.01" min="0" value="1000" oninput="debounceCalculate()" placeholder="e.g. 320"></div>
-                
-                <div class="cell label"><label for="totalStake" title="The total amount you wish to bet across all outcomes (optional)">Total Stake</label></div>
-                <div class="cell input"><input type="number" id="totalStake" step="0.01" min="0" value="10000" oninput="debounceCalculate()" placeholder="Optional"></div>
-                
-                <!-- Calculations Section -->
-                <div class="cell section-header">🧮 Calculations</div>
-                <div class="cell section-header"></div>
-                
-                <div class="cell label"><label for="prob1" title="The probability implied by Odds 1 (1/Odds)">Implied Probability Outcome 1</label></div>
-                <div class="cell calculation" id="prob1" aria-live="polite">47.62%</div>
-                
-                <div class="cell label"><label for="prob2" title="The probability implied by Odds 2 (1/Odds)">Implied Probability Outcome 2</label></div>
-                <div class="cell calculation" id="prob2" aria-live="polite">50.00%</div>
-                
-                <div class="cell label" id="prob3Label" style="display: none;"><label for="prob3" title="The probability implied by Draw Odds (1/Odds)">Implied Probability Draw</label></div>
-                <div class="cell calculation" id="prob3" style="display: none;" aria-live="polite">31.25%</div>
-                
-                <div class="cell label"><label for="totalProb" title="The sum of implied probabilities for all outcomes">Total Implied Probability</label></div>
-                <div class="cell calculation" id="totalProb" aria-live="polite">97.62%</div>
-                
-                <div class="cell label"><label for="arbitrage" title="Indicates if an arbitrage opportunity exists (Total Probability < 100%)">Arbitrage Possible?</label></div>
-                <div class="cell calculation arbitrage-yes" id="arbitrage" aria-live="polite">✅ Yes</div>
-                
-                <!-- Output Section -->
-                <div class="cell section-header">📊 Results</div>
-                <div class="cell section-header"></div>
-                
-                <div class="cell label"><label for="stake1" title="The amount to bet on Outcome 1">Stake for Outcome 1</label></div>
-                <div class="cell output" id="stake1" aria-live="polite">रू4,761.90</div>
-                
-                <div class="cell label"><label for="stake2" title="The amount to bet on Outcome 2">Stake for Outcome 2</label></div>
-                <div class="cell output" id="stake2" aria-live="polite">रू5,000.00</div>
-                
-                <div class="cell label" id="stake3Label" style="display: none;"><label for="stake3" title="The amount to bet on Draw">Stake for Draw</label></div>
-                <div class="cell output" id="stake3" style="display: none;" aria-live="polite">रू3,125.00</div>
-                
-                <div class="cell label"><label for="totalStakeOutput" title="The total amount bet across all outcomes">Total Stake</label></div>
-                <div class="cell output" id="totalStakeOutput" aria-live="polite">रू9,761.90</div>
-                
-                <div class="cell label"><label for="payout" title="The guaranteed payout if any outcome wins">Guaranteed Payout</label></div>
-                <div class="cell output" id="payout" aria-live="polite">रू10,000.00</div>
-                
-                <div class="cell label"><label for="profit" title="The guaranteed profit from the arbitrage">Profit</label></div>
-                <div class="cell output profit-positive" id="profit" aria-live="polite">रू238.10</div>
-                
-                <div class="cell label"><label for="profitPercent" title="The profit as a percentage of the total stake">Profit Percentage</label></div>
-                <div class="cell output profit-positive" id="profitPercent" aria-live="polite">2.44%</div>
-                
-                <!-- 3-Way Analysis Section -->
-                <div class="cell section-header" id="analysisHeader" style="display: none;">📈 3-Way Analysis</div>
-                <div class="cell section-header" id="analysisHeaderEmpty" style="display: none;"></div>
-                
-                <div class="cell label" id="bestOutcomeLabel" style="display: none;"><label for="bestOutcome" title="The outcome with the highest payout">Best Outcome</label></div>
-                <div class="cell calculation" id="bestOutcome" style="display: none;" aria-live="polite">Outcome 1 Win</div>
-                
-                <div class="cell label" id="worstOutcomeLabel" style="display: none;"><label for="worstOutcome" title="The outcome with the lowest payout">Worst Outcome</label></div>
-                <div class="cell calculation" id="worstOutcome" style="display: none;" aria-live="polite">Draw</div>
-                
-                <div class="cell label" id="riskAssessmentLabel" style="display: none;"><label for="riskAssessment" title="The risk level based on payout differences">Risk Level</label></div>
-                <div class="cell calculation" id="riskAssessment" style="display: none;" aria-live="polite">🟢 Low Risk</div>
-                
-                <!-- Draw Protection Section -->
-                <div class="cell section-header" id="drawProtectionHeader" style="display: none;">🛡️ Draw Protection</div>
-                <div class="cell section-header" id="drawProtectionHeaderEmpty" style="display: none;"></div>
-                
-                <div class="cell label" id="originalProfitLabel" style="display: none;"><label for="originalProfit" title="The profit from a 2-way arbitrage without draw protection">Original 2-Way Profit</label></div>
-                <div class="cell calculation" id="originalProfit" style="display: none;" aria-live="polite">रू238.10</div>
-                
-                <div class="cell label" id="drawBetNeededLabel" style="display: none;"><label for="drawBetNeeded" title="The amount to bet on draw to protect the profit">Draw Bet Needed</label></div>
-                <div class="cell calculation" id="drawBetNeeded" style="display: none;" aria-live="polite">रू3,055.56</div>
-                
-                <div class="cell label" id="protectedProfitLabel" style="display: none;"><label for="protectedProfit" title="The profit after adding draw protection">Protected Profit</label></div>
-                <div class="cell output profit-negative" id="protectedProfit" style="display: none;" aria-live="polite">रू-2,817.46</div>
-                
-                <div class="cell label" id="profitReductionLabel" style="display: none;"><label for="profitReduction" title="The percentage reduction in profit due to draw protection">Profit Reduction</label></div>
-                <div class="cell calculation" id="profitReduction" style="display: none;" aria-live="polite">1000.0%</div>
-                
-                <div class="cell label" id="recommendationLabel" style="display: none;"><label for="recommendation" title="Recommendation for draw protection based on profit reduction">Recommendation</label></div>
-                <div class="cell calculation" id="recommendation" style="display: none;" aria-live="polite">❌ Not Recommended</div>
-            </div>
-            
-            <div id="warning" class="warning" style="display: none;">
-                ⚠️ Warning: Please enter valid positive numbers for odds and bets.
-            </div>
-        </div>
-    </div>
-
-
-    <script>
-        // Debounce function to limit recalculations
-        let timeout;
-        function debounceCalculate() {
-            clearTimeout(timeout);
-            timeout = setTimeout(calculate, 300);
-        }
-
-
-        function calculate() {
-            try {
-                const odds1 = parseFloat(document.getElementById('odds1').value) || 0;
-                const odds2 = parseFloat(document.getElementById('odds2').value) || 0;
-                const odds3 = parseFloat(document.getElementById('odds3').value) || 0;
-                const minBet = parseFloat(document.getElementById('minBet').value) || 0;
-                const totalStakeInput = parseFloat(document.getElementById('totalStake').value) || 0;
-                const currencySymbol = 'रू';
-                const marketType = document.getElementById('marketType').value;
-                const is3Way = marketType === '3way';
-
-
-                // Input validation
-                const warningElement = document.getElementById('warning');
-                if (odds1 <= 0 || odds2 <= 0 || (is3Way && odds3 <= 0) || minBet < 0 || totalStakeInput < 0) {
-                    warningElement.textContent = '⚠️ Please enter valid positive numbers for odds and bets.';
-                    warningElement.style.display = 'block';
-                    clearOutputs(currencySymbol);
-                    hideDrawProtection();
-                    return;
-                } else {
-                    warningElement.style.display = 'none';
-                }
-
-
-                // Handle 3-way vs 2-way display
-                handleMarketTypeDisplay(is3Way);
-
-
-                // Calculate implied probabilities
-                const prob1 = 1 / odds1;
-                const prob2 = 1 / odds2;
-                const prob3 = is3Way ? 1 / odds3 : 0;
-                const totalProb = prob1 + prob2 + prob3;
-
-
-                // Update probability displays
-                document.getElementById('prob1').textContent = (prob1 * 100).toFixed(2) + '%';
-                document.getElementById('prob2').textContent = (prob2 * 100).toFixed(2) + '%';
-                if (is3Way) {
-                    document.getElementById('prob3').textContent = (prob3 * 100).toFixed(2) + '%';
-                }
-                document.getElementById('totalProb').textContent = (totalProb * 100).toFixed(2) + '%';
-
-
-                // Check arbitrage possibility
-                const arbitragePossible = totalProb < 1;
-                const arbitrageElement = document.getElementById('arbitrage');
-                arbitrageElement.textContent = arbitragePossible ? '✅ Yes' : '❌ No';
-                arbitrageElement.className = arbitragePossible ? 'cell calculation arbitrage-yes' : 'cell calculation arbitrage-no';
-
-
-                if (!arbitragePossible) {
-                    warningElement.textContent = '⚠️ No arbitrage opportunity exists (Total Probability ≥ 100%).';
-                    warningElement.style.display = 'block';
-                    clearOutputs(currencySymbol);
-                    hideDrawProtection();
-                    return;
-                } else {
-                    warningElement.style.display = 'none';
-                }
-
-
-                // Calculate stakes
-                let stake1, stake2, stake3 = 0;
-                let targetPayout;
-                let warningMessage = '';
-
-
-                if (totalStakeInput > 0) {
-                    // Use provided total stake with proportional distribution
-                    stake1 = (totalStakeInput * prob1) / totalProb;
-                    stake2 = (totalStakeInput * prob2) / totalProb;
-                    if (is3Way) stake3 = (totalStakeInput * prob3) / totalProb;
-
-
-                    // Check minimum bet constraint
-                    const minStake = Math.min(stake1, stake2, is3Way ? stake3 : Infinity);
-                    if (minStake < minBet) {
-                        // Adjust for minimum bet
-                        const multiplier = minBet / minStake;
-                        stake1 *= multiplier;
-                        stake2 *= multiplier;
-                        if (is3Way) stake3 *= multiplier;
-
-
-                        warningMessage = 'Stakes adjusted to meet minimum bet requirement!';
-                    }
-
-
-                    targetPayout = Math.max(stake1 * odds1, stake2 * odds2, is3Way ? stake3 * odds3 : 0);
-                } else {
-                    // Use minimum bet as starting point
-                    const baseStake = minBet;
-
-
-                    // Find the best outcome to base calculations on (highest payout ratio)
-                    const ratios = [prob1, prob2];
-                    if (is3Way) ratios.push(prob3);
-
-
-                    const minRatioIndex = ratios.indexOf(Math.min(...ratios));
-
-
-                    if (minRatioIndex === 0) {
-                        stake1 = baseStake;
-                        targetPayout = stake1 * odds1;
-                    } else if (minRatioIndex === 1) {
-                        stake2 = baseStake;
-                        targetPayout = stake2 * odds2;
-                    } else if (is3Way) {
-                        stake3 = baseStake;
-                        targetPayout = stake3 * odds3;
-                    }
+  <div class="page-wrap">
+    <div class="container">
+      <header class="hero">
+        <h1>2-Way Arbitrage Calculator with Draw Protection</h1>
+      </header>
 
-
-                    // Calculate other stakes to match payout
-                    if (minRatioIndex !== 0) stake1 = targetPayout / odds1;
-                    if (minRatioIndex !== 1) stake2 = targetPayout / odds2;
-                    if (is3Way && minRatioIndex !== 2) stake3 = targetPayout / odds3;
-                }
+      <section class="panel instructions">
+        <div class="panel-title">Instructions:</div>
+        <div class="instructions">
+          <ul class="instr-list">
+            <li>Team A Odds: Enter decimal odds for Team A to win</li>
+            <li>Team B Odds: Enter decimal odds for Team B to win</li>
+            <li>Draw Odds (Optional): Enter draw odds to see protection analysis</li>
+            <li>Minimum Bet: Enter minimum bet requirement for any restricted site</li>
+            <li>Total Stake (Optional): Enter desired total stake; leave blank for auto</li>
+            <li>Currency: Choose between USD ($) or NPR (रु)</li>
+          </ul>
+        </div>
+      </section>
 
+      <button class="section-button">INPUT PARAMETERS</button>
 
-                // Update warning
-                warningElement.textContent = warningMessage ? '⚠️ ' + warningMessage : '';
-                warningElement.style.display = warningMessage ? 'block' : 'none';
-
-
-                // Calculate totals
-                const totalStakeActual = stake1 + stake2 + stake3;
-                const profit = targetPayout - totalStakeActual;
-                const profitPercent = totalStakeActual > 0 ? (profit / totalStakeActual) * 100 : 0;
-
-
-                // Update displays with NPR currency
-                document.getElementById('stake1').textContent = currencySymbol + stake1.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                document.getElementById('stake2').textContent = currencySymbol + stake2.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                if (is3Way) {
-                    document.getElementById('stake3').textContent = currencySymbol + stake3.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                }
-                document.getElementById('totalStakeOutput').textContent = currencySymbol + totalStakeActual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                document.getElementById('payout').textContent = currencySymbol + targetPayout.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-
-                // Update profit with color coding
-                const profitElement = document.getElementById('profit');
-                const profitPercentElement = document.getElementById('profitPercent');
-                profitElement.textContent = currencySymbol + profit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                profitPercentElement.textContent = profitPercent.toFixed(2) + '%';
-
-
-                const profitClass = profit > 0 ? 'cell output profit-positive' : 'cell output profit-negative';
-                profitElement.className = profitClass;
-                profitPercentElement.className = profitClass;
-
-
-                // 3-Way Analysis
-                if (is3Way && arbitragePossible) {
-                    const outcomes = [
-                        {name: 'Outcome 1 Win', payout: stake1 * odds1, stake: stake1, odds: odds1},
-                        {name: 'Outcome 2 Win', payout: stake2 * odds2, stake: stake2, odds: odds2},
-                        {name: 'Draw/Tie', payout: stake3 * odds3, stake: stake3, odds: odds3}
-                    ];
-
-
-                    const sortedByPayout = outcomes.slice().sort(function(a, b) { return b.payout - a.payout; });
-                    const best = sortedByPayout[0];
-                    const worst = sortedByPayout[sortedByPayout.length - 1];
-
-
-                    document.getElementById('bestOutcome').textContent = best.name;
-                    document.getElementById('worstOutcome').textContent = worst.name;
-
-
-                    // Risk assessment
-                    const payoutDifference = best.payout - worst.payout;
-                    const riskLevel = payoutDifference < (totalStakeActual * 0.02) ? '🟢 Low Risk' : 
-                                     payoutDifference < (totalStakeActual * 0.05) ? '🟡 Medium Risk' : '🔴 High Risk';
-                    document.getElementById('riskAssessment').textContent = riskLevel;
-
-
-                    hideDrawProtection();
-                }
-
-
-                // Draw Protection Analysis (for 2-way markets with draw odds)
-                if (!is3Way && odds3 > 0 && arbitragePossible) {
-                    // Validate draw odds
-                    if (odds3 < 1.5) {
-                        warningElement.textContent = '⚠️ Draw odds too low for effective protection.';
-                        warningElement.style.display = 'block';
-                        hideDrawProtection();
-                        return;
-                    }
-
-
-                    // Calculate original 2-way profit
-                    const original2WayStake1 = targetPayout / odds1;
-                    const original2WayStake2 = targetPayout / odds2;
-                    const original2WayTotal = original2WayStake1 + original2WayStake2;
-                    const original2WayProfit = targetPayout - original2WayTotal;
-
-
-                    // Calculate draw protection bet needed to secure original profit
-                    const drawBetNeeded = (targetPayout - original2WayProfit) / odds3;
-                    const protectedTotalStake = original2WayTotal + drawBetNeeded;
-                    const protectedProfit = targetPayout - protectedTotalStake;
-                    const profitReductionPercent = original2WayProfit > 0 ? Math.min(((original2WayProfit - protectedProfit) / original2WayProfit) * 100, 1000) : 0;
-
-
-                    showDrawProtection();
-
-
-                    // Update draw protection values
-                    document.getElementById('originalProfit').textContent = currencySymbol + original2WayProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    document.getElementById('drawBetNeeded').textContent = currencySymbol + drawBetNeeded.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    document.getElementById('protectedProfit').textContent = currencySymbol + protectedProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    document.getElementById('profitReduction').textContent = profitReductionPercent.toFixed(1) + '%';
-
-
-                    // Recommendation logic
-                    let recommendationText = '';
-                    if (profitReductionPercent < 30) {
-                        recommendationText = '✅ Highly Recommended';
-                    } else if (profitReductionPercent < 50) {
-                        recommendationText = '⚖️ Consider Protection';
-                    } else if (profitReductionPercent < 80) {
-                        recommendationText = '⚠️ Marginal Benefit';
-                    } else {
-                        recommendationText = '❌ Not Recommended';
-                    }
-                    document.getElementById('recommendation').textContent = recommendationText;
-
-
-                    // Color code protected profit
-                    const protectedProfitElement = document.getElementById('protectedProfit');
-                    protectedProfitElement.className = protectedProfit > 0 ? 'cell output profit-positive' : 'cell output profit-negative';
-                } else {
-                    hideDrawProtection();
-                }
-
-
-            } catch (error) {
-                console.error('Calculation error:', error);
-                document.getElementById('warning').textContent = '⚠️ An error occurred during calculation. Please check your inputs.';
-                document.getElementById('warning').style.display = 'block';
-                clearOutputs('रू');
-            }
-        }
-
-
-        function handleMarketTypeDisplay(is3Way) {
-            const threewayElements = [
-                document.getElementById('prob3Label'),
-                document.getElementById('prob3'),
-                document.getElementById('stake3Label'),
-                document.getElementById('stake3'),
-                document.getElementById('analysisHeader'),
-                document.getElementById('analysisHeaderEmpty'),
-                document.getElementById('bestOutcomeLabel'),
-                document.getElementById('bestOutcome'),
-                document.getElementById('worstOutcomeLabel'),
-                document.getElementById('worstOutcome'),
-                document.getElementById('riskAssessmentLabel'),
-                document.getElementById('riskAssessment')
-            ];
-
-
-            if (is3Way) {
-                threewayElements.forEach(function(el) {
-                    if (el) el.style.display = el.classList.contains('cell') ? 'flex' : 'block';
-                });
-            } else {
-                threewayElements.forEach(function(el) {
-                    if (el) el.style.display = 'none';
-                });
-            }
-        }
-
-
-        function clearOutputs(currencySymbol) {
-            document.getElementById('stake1').textContent = currencySymbol + '0.00';
-            document.getElementById('stake2').textContent = currencySymbol + '0.00';
-            document.getElementById('stake3').textContent = currencySymbol + '0.00';
-            document.getElementById('totalStakeOutput').textContent = currencySymbol + '0.00';
-            document.getElementById('payout').textContent = currencySymbol + '0.00';
-            document.getElementById('profit').textContent = currencySymbol + '0.00';
-            document.getElementById('profitPercent').textContent = '0.00%';
-        }
-
-
-        function showDrawProtection() {
-            const drawProtectionElements = [
-                document.getElementById('drawProtectionHeader'),
-                document.getElementById('drawProtectionHeaderEmpty'),
-                document.getElementById('originalProfitLabel'),
-                document.getElementById('originalProfit'),
-                document.getElementById('drawBetNeededLabel'),
-                document.getElementById('drawBetNeeded'),
-                document.getElementById('protectedProfitLabel'),
-                document.getElementById('protectedProfit'),
-                document.getElementById('profitReductionLabel'),
-                document.getElementById('profitReduction'),
-                document.getElementById('recommendationLabel'),
-                document.getElementById('recommendation')
-            ];
-
-
-            drawProtectionElements.forEach(function(el) {
-                if (el) el.style.display = el.classList.contains('cell') ? 'flex' : 'block';
-            });
-        }
-
-
-        function hideDrawProtection() {
-            const drawProtectionElements = [
-                document.getElementById('drawProtectionHeader'),
-                document.getElementById('drawProtectionHeaderEmpty'),
-                document.getElementById('originalProfitLabel'),
-                document.getElementById('originalProfit'),
-                document.getElementById('drawBetNeededLabel'),
-                document.getElementById('drawBetNeeded'),
-                document.getElementById('protectedProfitLabel'),
-                document.getElementById('protectedProfit'),
-                document.getElementById('profitReductionLabel'),
-                document.getElementById('profitReduction'),
-                document.getElementById('recommendationLabel'),
-                document.getElementById('recommendation')
-            ];
-
-
-            drawProtectionElements.forEach(function(el) {
-                if (el) el.style.display = 'none';
-            });
-        }
-
-
-        // Initialize calculator when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            calculate();
-        });
-
-
-        // Auto-calculate on page load
-        calculate();
-    </script>
+      <form id="arbForm" class="panel form" autocomplete="off">
+        <label class="field-label">Team A Win Odds</label>
+        <div class="field"><input id="oddsA" type="number" step="0.01" placeholder="2.1" required /></div>
+
+        <label class="field-label">Team B Win Odds</label>
+        <div class="field"><input id="oddsB" type="number" step="0.01" placeholder="2.0" required /></div>
+
+        <label class="field-label">Draw/Tie Odds (Optional)</label>
+        <div class="field"><input id="oddsDraw" type="number" step="0.01" placeholder="3.2" /></div>
+
+        <label class="field-label">Minimum Bet Requirement</label>
+        <div class="field"><input id="minBet" type="number" step="0.01" placeholder="100" /></div>
+
+        <label class="field-label">Total Stake (Optional)</label>
+        <div class="field"><input id="totalStake" type="number" step="0.01" placeholder="Leave blank for auto" /></div>
+
+        <label class="field-label">Currency</label>
+        <div class="field">
+          <select id="currency">
+            <option value="USD">$ USD ($)</option>
+            <option value="NPR">रु NPR (Rs)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="action-btn">CALCULATIONS</button>
+      </form>
+
+      <section class="panel results">
+        <div class="panel-title">CALCULATIONS</div>
+
+        <div class="result-row label-only">Team A Win Probability</div>
+        <div class="result-row value" id="probA">--</div>
+
+        <div class="result-row label-only">Team B Win Probability</div>
+        <div class="result-row value" id="probB">--</div>
+
+        <div class="result-row label-only">Total Implied Probability</div>
+        <div class="result-row value" id="implied">--</div>
+
+        <div class="result-row label-only">Arbitrage Possible?</div>
+        <div class="result-row arb-yes" id="arbPossible">--</div>
+
+        <div class="result-row label-only">Warning</div>
+        <div class="result-row warning" id="warning">--</div>
+      </section>
+
+      <section class="panel two-way-results">
+        <div class="panel-title">2-WAY ARBITRAGE RESULTS</div>
+
+        <div class="result-row label-only">Stake on Team A</div>
+        <div class="result-row value" id="stakeA">$0.00</div>
+
+        <div class="result-row label-only">Stake on Team B</div>
+        <div class="result-row value" id="stakeB">$0.00</div>
+
+        <div class="result-row label-only">Total Stake</div>
+        <div class="result-row value" id="totalStk">$0.00</div>
+
+        <div class="result-row label-only">Guaranteed Payout</div>
+        <div class="result-row value" id="payout">$0.00</div>
+
+        <div class="result-row label-only">Profit</div>
+        <div class="result-row profit" id="profit">$0.00</div>
+
+        <div class="result-row label-only">Profit Percentage</div>
+        <div class="result-row value" id="profitPerc">0%</div>
+      </section>
+
+      <section class="panel draw-protection">
+        <div class="panel-title">DRAW PROTECTION ANALYSIS</div>
+
+        <div class="result-row label-only">Draw Probability</div>
+        <div class="result-row value" id="drawProb">--</div>
+
+        <div class="result-row label-only">Original 2-Way Profit</div>
+        <div class="result-row value" id="origProfit">$0.00</div>
+
+        <div class="result-row label-only">Draw Stake Needed (to break even on draw)</div>
+        <div class="result-row negative" id="drawStakeNeeded">--</div>
+
+        <div class="result-row label-only">Protected Profit</div>
+        <div class="result-row value" id="protProfit">--</div>
+
+        <div class="result-row label-only">Profit Reduction</div>
+        <div class="result-row negative" id="profitReduction">--</div>
+
+        <!-- New row requested by you: New Profit Percentage after draw protection -->
+        <div class="result-row label-only">New Profit Percentage</div>
+        <div class="result-row value" id="newProfitPerc">--</div>
+
+        <div class="result-row label-only">Recommendation</div>
+        <div class="result-row value" id="recommendation">--</div>
+
+        <div class="result-row label-only">Cost vs Benefit</div>
+        <div class="result-row value" id="costbenefit">--</div>
+      </section>
+
+      <footer class="footer">
+        <small>Tip: Use browser devtools mobile view to preview a phone-like layout.</small>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Formatting helpers
+    function fmt(n, cur) {
+      const precision = 2;
+      if (n === null || n === undefined || isNaN(n)) return '--';
+      if (cur === 'NPR') return 'रु ' + Number(n).toFixed(precision);
+      return (cur === 'USD' ? '$' : '') + Number(n).toFixed(2);
+    }
+
+    function pctVal(v) {
+      if (v === null || v === undefined || isNaN(v)) return '--';
+      return (v * 100).toFixed(2) + '%';
+    }
+
+    function pctNumber(v) {
+      if (v === null || v === undefined || isNaN(v)) return NaN;
+      return Number(v);
+    }
+
+    document.getElementById('arbForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const oddsA = parseFloat(document.getElementById('oddsA').value);
+      const oddsB = parseFloat(document.getElementById('oddsB').value);
+      const oddsDraw = parseFloat(document.getElementById('oddsDraw').value);
+      const minBet = parseFloat(document.getElementById('minBet').value) || 0;
+      let totalStakeInput = parseFloat(document.getElementById('totalStake').value);
+      const currency = document.getElementById('currency').value;
+
+      if (!oddsA || !oddsB || oddsA <= 1 || oddsB <= 1) {
+        alert('Please enter valid decimal odds (>1) for Team A and Team B.');
+        return;
+      }
+
+      // Basic probabilities
+      const pA = 1 / oddsA;
+      const pB = 1 / oddsB;
+      const sumP = pA + pB;
+
+      // Auto total stake: choose a reasonable default if not provided
+      let totalStake;
+      if (!totalStakeInput || totalStakeInput <= 0) {
+        const testTotal = Math.max(100, minBet * 2 || 100);
+        totalStake = testTotal;
+      } else {
+        totalStake = totalStakeInput;
+      }
+
+      // stakes that produce equal payout
+      const stakeA = totalStake * (pA / sumP);
+      const stakeB = totalStake * (pB / sumP);
+      const payout = stakeA * oddsA; // equal to stakeB * oddsB
+      const profit = payout - totalStake;
+      const profitPerc = (profit / totalStake) * 100;
+
+      // Draw protection calculations (if draw odds supplied)
+      let drawProb = null, drawStakeNeeded = null, protectedProfit = null, profitReduction = null, recommendation = '--', costbenefit = '--', newProfitPercentage = null;
+      if (oddsDraw && oddsDraw > 1) {
+        drawProb = 1 / oddsDraw;
+        const lossOnDraw = totalStake; // both A and B lose
+        // D * (oddsDraw - 1) >= totalStake  => D >= totalStake / (oddsDraw - 1)
+        drawStakeNeeded = totalStake / (oddsDraw - 1);
+        // If we place draw stake D as extra outlay, protectedProfit = original profit - D
+        protectedProfit = profit - drawStakeNeeded;
+        profitReduction = drawStakeNeeded; // how much profit reduced by protecting
+
+        // New profit percentage relative to total outlay (totalStake + drawStakeNeeded)
+        const totalOutlay = totalStake + drawStakeNeeded;
+        if (!isNaN(protectedProfit) && isFinite(totalOutlay) && totalOutlay > 0) {
+          newProfitPercentage = (protectedProfit / totalOutlay) * 100;
+        }
+
+        // Simple recommendation heuristic
+        if (drawStakeNeeded <= 0 || !isFinite(drawStakeNeeded)) {
+          recommendation = 'Not Applicable';
+          costbenefit = 'N/A';
+        } else {
+          const costRatio = drawStakeNeeded / totalStake;
+          if (costRatio > 1.5) {
+            recommendation = '❌ Not Recommended';
+            costbenefit = 'Very High Cost';
+          } else if (costRatio > 0.6) {
+            recommendation = '⚠️ Consider Carefully';
+            costbenefit = 'High Cost';
+          } else {
+            recommendation = '✅ Maybe Worth It';
+            costbenefit = 'Low Cost';
+          }
+        }
+      }
+
+      // Populate UI
+      document.getElementById('probA').textContent = pctVal(pA);
+      document.getElementById('probB').textContent = pctVal(pB);
+      document.getElementById('implied').textContent = (sumP * 100).toFixed(2) + '%';
+      document.getElementById('arbPossible').textContent = (sumP < 1) ? 'Yes' : 'No';
+      document.getElementById('warning').textContent = (sumP < 1) ? '--' : (sumP === 1 ? 'No margin (exact fairness)' : 'No arbitrage — implied probability >= 100%');
+
+      const curSym = currency;
+
+      document.getElementById('stakeA').textContent = fmt(stakeA, curSym);
+      document.getElementById('stakeB').textContent = fmt(stakeB, curSym);
+      document.getElementById('totalStk').textContent = fmt(totalStake, curSym);
+      document.getElementById('payout').textContent = fmt(payout, curSym);
+      document.getElementById('profit').textContent = fmt(profit, curSym);
+      document.getElementById('profitPerc').textContent = profitPerc.toFixed(2) + '%';
+
+      document.getElementById('drawProb').textContent = drawProb ? pctVal(drawProb) : '--';
+      document.getElementById('origProfit').textContent = fmt(profit, curSym);
+      document.getElementById('drawStakeNeeded').textContent = drawStakeNeeded ? fmt(drawStakeNeeded, curSym) : '--';
+      document.getElementById('protProfit').textContent = (protectedProfit !== null && protectedProfit !== undefined && !isNaN(protectedProfit)) ? fmt(protectedProfit, curSym) : '--';
+      document.getElementById('profitReduction').textContent = profitReduction ? fmt(profitReduction, curSym) : '--';
+      document.getElementById('recommendation').textContent = recommendation;
+      document.getElementById('costbenefit').textContent = costbenefit;
+
+      // New Profit Percentage row: update text and color (green if >0, red with minus sign if <0)
+      const newProfitEl = document.getElementById('newProfitPerc');
+      if (newProfitPercentage === null || isNaN(newProfitPercentage)) {
+        newProfitEl.textContent = '--';
+        newProfitEl.className = 'result-row value';
+      } else {
+        const rounded = Math.abs(newProfitPercentage).toFixed(2) + '%';
+        if (newProfitPercentage > 0) {
+          newProfitEl.textContent = rounded;
+          newProfitEl.className = 'result-row new-profit-positive';
+        } else if (newProfitPercentage < 0) {
+          // show minus sign in front
+          newProfitEl.textContent = '-' + rounded;
+          newProfitEl.className = 'result-row new-profit-negative';
+        } else {
+          newProfitEl.textContent = '0.00%';
+          newProfitEl.className = 'result-row value';
+        }
+      }
+    });
+
+    // Prefill sample values to match screenshot-like example
+    window.addEventListener('load', () => {
+      document.getElementById('oddsA').value = '2.1';
+      document.getElementById('oddsB').value = '2.0';
+      document.getElementById('oddsDraw').value = '3.2';
+      document.getElementById('minBet').value = '100';
+      // totalStake left blank for auto default
+    });
+  </script>
 </body>
 </html>
