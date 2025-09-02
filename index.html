@@ -52,9 +52,6 @@
     .smallnote{font-size:0.82rem;color:var(--muted)}
     .hide{display:none}
 
-    /* suggestions content formatting */
-    .suggestions-text{white-space:pre-wrap;text-align:left;max-width:640px}
-
     /* animations */
     .fade{transition:all .28s cubic-bezier(.2,.9,.2,1);opacity:1;transform:translateY(0)}
     .fade.hide{opacity:0;transform:translateY(-6px)}
@@ -133,7 +130,7 @@
             <!-- Probabilities -->
             <div class="tile"><h3>Team A Probability</h3><div class="value-pill" id="probA">--</div></div>
             <div class="tile"><h3>Team B Probability</h3><div class="value-pill" id="probB">--</div></div>
-            <div id="probDrawTile" class="tile"><h3>Draw Probability</h3><div class="value-pill" id="probD">--</div></div>
+            <div class="tile hide" id="probDrawTile"><h3>Draw Probability</h3><div class="value-pill" id="probD">--</div></div>
 
             <div id="implied2Tile" class="tile"><h3>Implied Probability (2‑way)</h3><div class="value-pill" id="implied2">--</div></div>
             <div id="implied3Tile" class="tile"><h3>Implied Probability (3‑way)</h3><div class="value-pill" id="implied3">--</div></div>
@@ -160,21 +157,16 @@
             </div>
 
             <!-- draw protection area (only for 2-way when draw odds present) -->
-            <div id="drawArea">
+            <div id="drawArea" class="hide">
               <div class="tile"><h3>Draw Probability</h3><div class="value-pill" id="drawProb">--</div></div>
               <div class="tile"><h3>Original 2‑Way Profit</h3><div class="value-pill" id="origProfit">रु 0.00</div></div>
-              <div class="tile"><h3>Draw Stake Needed (to break even)</h3><div class="value-pill" id="drawStakeNeeded">--</div></div>
+              <div class="tile"><h3>Draw Stake Needed (to neutralize payouts)</h3><div class="value-pill" id="drawStakeNeeded">--</div></div>
               <div class="tile"><h3>Protected Profit (after draw bet)</h3><div class="value-pill" id="protProfit">--</div></div>
               <div class="tile"><h3>Profit Reduction</h3><div class="value-pill" id="profitReduction">--</div></div>
               <div class="tile"><h3>New Profit % (post‑draw)</h3><div class="value-pill" id="newProfitPerc">--</div></div>
               <div class="tile"><h3>Recommendation</h3><div class="value-pill" id="recommendation">--</div></div>
               <div class="tile"><h3>Cost vs Benefit</h3><div class="value-pill muted" id="costbenefit">--</div></div>
-
-              <div class="tile hide" id="threeWaySuggestion"><h3>3‑Way vs Hedging</h3><div class="value-pill" id="threeWaySuggestText">--</div></div>
             </div>
-
-            <!-- Suggestions -->
-            <div id="suggestionsArea" class="tile hide"><h3>Pre‑bet Suggestions / Checklist</h3><div class="value-pill muted suggestions-text" id="suggestionsText">--</div></div>
 
           </div>
         </div>
@@ -200,10 +192,6 @@
     const implied3Tile = $('implied3Tile');
     const implied2Tile = $('implied2Tile');
     const arbBadge = $('arbBadge');
-    const threeWaySuggestion = $('threeWaySuggestion');
-    const threeWaySuggestText = $('threeWaySuggestText');
-    const suggestionsArea = $('suggestionsArea');
-    const suggestionsText = $('suggestionsText');
 
     function setVisibility(){
       const mode = modeSelect.value; // '2' or '3'
@@ -212,6 +200,8 @@
         implied2Tile.classList.remove('hide');
         implied3Tile.classList.add('hide');
         threeWayArea.classList.add('hide');
+        drawArea.classList.add('hide');
+        probDrawTile.classList.add('hide');
       } else {
         twoWayArea.classList.add('hide');
         implied2Tile.classList.add('hide');
@@ -225,7 +215,7 @@
     modeSelect.addEventListener('change', ()=>{ setVisibility(); clearResults(); });
 
     function clearResults(){
-      const ids = ['probA','probB','probD','implied2','implied3','stakeA','stakeB','totalStk','payout','profit','profitPerc','stake3A','stake3B','stake3D','totalStk3','payout3','profit3','profitPerc3','drawProb','origProfit','drawStakeNeeded','protProfit','profitReduction','newProfitPerc','recommendation','costbenefit','threeWaySuggestText','suggestionsText'];
+      const ids = ['probA','probB','probD','implied2','implied3','stakeA','stakeB','totalStk','payout','profit','profitPerc','stake3A','stake3B','stake3D','totalStk3','payout3','profit3','profitPerc3','drawProb','origProfit','drawStakeNeeded','protProfit','profitReduction','newProfitPerc','recommendation','costbenefit'];
       ids.forEach(id=>{
         const el = $(id);
         if (!el) return;
@@ -237,7 +227,6 @@
       });
       arbBadge.textContent = 'Status: —';
       threeWaySuggestion.classList.add('hide');
-      suggestionsArea.classList.add('hide');
     }
 
     function validateOdds(a,b,draw){
@@ -301,7 +290,9 @@
       let drawStakeNeeded = null, protectedProfit=null, profitReduction=null, newProfitPercentage=null, drawProb=null;
       if (pD>0){
         drawProb = pD;
-        drawStakeNeeded = totalStake / (oddsD - 1);
+        // FIXED: stake needed on draw to achieve the same payout as the A/B payout:
+        // stakeD * oddsD = payout2  => stakeD = payout2 / oddsD
+        drawStakeNeeded = payout2 / oddsD;
         protectedProfit = profit2 - drawStakeNeeded;
         profitReduction = drawStakeNeeded;
         const totalOutlay = totalStake + drawStakeNeeded;
@@ -379,8 +370,12 @@
           else applyValueClass($('newProfitPerc'), newProfitPercentage, true);
 
           // recommendation and costbenefit color changes
-          const recEl = $('recommendation'); recEl.textContent = recommendation; recEl.className = 'value-pill'; if (recommendation.includes('Not Recommended')) recEl.classList.add('negative'); if (recommendation.includes('Maybe')) recEl.classList.add('positive');
-          const cbEl = $('costbenefit'); cbEl.textContent = costbenefit; cbEl.className = 'value-pill'; if (costbenefit.includes('Low Cost')) cbEl.classList.add('positive'); if (costbenefit.includes('High Cost')||costbenefit.includes('Very High')||costbenefit.includes('eliminates')) cbEl.classList.add('negative');
+          const recEl = $('recommendation'); recEl.textContent = recommendation; recEl.className = 'value-pill';
+          if (recommendation.includes('Not Recommended')) recEl.classList.add('negative');
+          if (recommendation.includes('Maybe')) recEl.classList.add('positive');
+          const cbEl = $('costbenefit'); cbEl.textContent = costbenefit; cbEl.className = 'value-pill';
+          if (costbenefit.includes('Low Cost')) cbEl.classList.add('positive');
+          if (costbenefit.includes('High Cost')||costbenefit.includes('Very High')||costbenefit.includes('eliminates')) cbEl.classList.add('negative');
         } else {
           drawArea.classList.add('hide');
           probDrawTile.classList.add('hide');
@@ -391,33 +386,27 @@
       }
 
       // Suggest 3-way vs hedging when it's genuinely better (works in both modes)
-      if (pD>0 && sum3 < 1 && isFinite(profit3val) && profit3val > 0 && profit3val > profit2){
-        const delta = profit3val - profit2;
-        const deltaPercPoints = profitPerc3val - profitPerc2;
-        threeWaySuggestText.textContent = `Go 3‑way: extra ${fmt(delta)} (Δ ${deltaPercPoints.toFixed(2)}pp). 3‑way profit ${fmt(profit3val)} — ${profitPerc3val.toFixed(2)}%`;
-        threeWaySuggestion.classList.remove('hide');
-        threeWaySuggestText.className = 'value-pill positive';
+      const threeWaySuggestionCondition = (pD>0 && sum3 < 1 && isFinite(profit3val) && profit3val > 0 && profit3val > profit2);
+      if (threeWaySuggestionCondition){
+        // show the small 3-way vs hedging tile (if you want it visible in the UI)
+        const threeWaySuggestion = $('threeWaySuggestion');
+        const threeWaySuggestText = $('threeWaySuggestText');
+        if (threeWaySuggestion && threeWaySuggestText) {
+          const delta = profit3val - profit2;
+          const deltaPercPoints = profitPerc3val - profitPerc2;
+          threeWaySuggestText.textContent = `Go 3‑way: extra ${fmt(delta)} (Δ ${deltaPercPoints.toFixed(2)}pp). 3‑way profit ${fmt(profit3val)} — ${profitPerc3val.toFixed(2)}%`;
+          threeWaySuggestion.classList.remove('hide');
+          threeWaySuggestText.className = 'value-pill positive';
+        }
       } else {
-        threeWaySuggestion.classList.add('hide');
+        const threeWaySuggestion = $('threeWaySuggestion');
+        if (threeWaySuggestion) threeWaySuggestion.classList.add('hide');
       }
 
       // Arb badges
       if (sum3 < 1) { arbBadge.textContent = 'Status: 3‑Way arbitrage possible'; }
       else if (sum2 < 1) { arbBadge.textContent = 'Status: 2‑Way arbitrage possible'; }
       else { arbBadge.textContent = 'Status: No arbitrage detected'; }
-
-      // Suggestions: always show a short checklist after each calculation so user inspects before betting
-      const suggestions = [];
-      suggestions.push('Confirm available liquidity and bet acceptance at both books/exchanges.');
-      suggestions.push('Check account limits, max bet and minimum bet (rounding may change stakes).');
-      suggestions.push('Factor in commissions/fees and payout rounding — small arbs may vanish.');
-      suggestions.push('Place A/B/D bets quickly to avoid odds movement; consider order of execution.');
-      suggestions.push('Verify you have sufficient balance in each book/exchange and available market sizes.');
-      if (minWarning !== '--') suggestions.push(minWarning);
-      suggestions.push('If suggestion recommends 3‑Way, double-check both markets accept the required draw bet size.');
-
-      suggestionsArea.classList.remove('hide');
-      suggestionsText.textContent = suggestions.join('\n\n');
 
       // min warning wiring (still alert as earlier)
       if (minWarning !== '--') alert(minWarning);
