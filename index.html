@@ -3,301 +3,279 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>2-Way and 3-Way Arbitrage Calculator with Draw Protection</title>
+  <title>Arbitrage Calculator — 2‑Way & 3‑Way</title>
   <style>
     :root{
-      --card-bg: #ffffff;
-      --bg-start: #f4fbff;
-      --bg-end: #eef6ff;
-      --accent-1: #4aa3e0;
-      --accent-2: #1f67a8;
-      --muted: #6c7a89;
-      --input-bg: #2b2f36;
-      --input-color: #ffffff;
-      --green-1: #dff4e0;
-      --green-2: #c1eac2;
-      --pink-1: #ffd7dc;
-      --pink-2: #ffb3bf;
-      --max-width: 440px;
-      --radius: 18px;
+      --bg:#0f1724;
+      --card:#0b1220;
+      --glass: rgba(255,255,255,0.03);
+      --muted: #98a4b8;
+      --accent:#4fb6ff;
+      --accent-2:#5fe6c5;
+      --danger:#ff6b7a;
+      --success:#28c76f;
+      --maxw:900px;
+      --radius:16px;
+      --glass-2: rgba(255,255,255,0.02);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071021 0%, #071827 50%, #04121b 100%);color:#e6eef6}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .app{width:100%;max-width:var(--maxw);display:grid;grid-template-columns:420px 1fr;gap:24px}
+    .card{background:linear-gradient(180deg,var(--card), #041224);border-radius:var(--radius);padding:18px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+    header.app-head{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+    .brand{display:flex;flex-direction:column}
+    .brand h1{margin:0;font-size:1.05rem;letter-spacing:0.2px}
+    .brand p{margin:2px 0 0;font-size:0.85rem;color:var(--muted)}
 
-    html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;background:linear-gradient(180deg,var(--bg-start),var(--bg-end));color:#102030;-webkit-font-smoothing:antialiased;}
+    .controls{display:flex;flex-direction:column;gap:12px}
+    label.small{font-size:0.78rem;color:var(--muted);display:block;margin-bottom:6px}
+    .input{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    input[type=number], select{width:100%;background:transparent;border:none;color:inherit;font-size:0.98rem;padding:6px;outline:none}
 
-    .page-wrap{display:flex;align-items:center;justify-content:center;padding:20px;min-height:100vh}
-    .container{width:100%;max-width:var(--max-width);background:var(--card-bg);border-radius:var(--radius);box-shadow:0 18px 40px rgba(16,24,40,0.12);overflow:hidden;border:1px solid rgba(21,32,64,0.06)}
+    .row{display:flex;gap:10px}
+    .col{flex:1}
+    .btn{background:linear-gradient(90deg,var(--accent),#2f9bff);border:none;color:#04202a;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px;border-radius:10px}
 
-    .hero{background:linear-gradient(180deg,var(--accent-1),var(--accent-2));color:white;padding:18px 16px;text-align:center}
-    .hero h1{margin:0;font-size:1.05rem;line-height:1.2;font-weight:800}
-    .hero p{margin:6px 0 0;font-size:0.85rem;opacity:0.95}
+    /* results pane */
+    .results{padding:18px;display:flex;flex-direction:column;gap:12px}
+    .tile{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center}
+    .tile h3{margin:0;font-size:0.86rem;color:var(--muted)}
+    .big{font-weight:800;color:#e6f7ff}
+    .muted{color:var(--muted)}
+    .value-pill{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));font-weight:800;color:inherit}
 
-    .panel{border-top:1px solid rgba(16,24,40,0.04)}
-    .panel-title{background:linear-gradient(180deg,#2e83c8,#1f67a8);color:white;font-weight:700;padding:10px 14px;font-size:0.95rem}
+    .positive{background:linear-gradient(90deg, rgba(40,199,111,0.12), rgba(40,199,111,0.06));color:var(--success);border-radius:8px;padding:6px 8px;font-weight:800}
+    .negative{background:linear-gradient(90deg, rgba(255,107,122,0.08), rgba(255,107,122,0.04));color:var(--danger);border-radius:8px;padding:6px 8px;font-weight:800}
 
-    .instructions{padding:14px}
-    .instr-list{margin:8px 0 0 0;padding-left:16px;color:var(--muted);font-size:0.9rem}
-    .instr-list li{margin:8px 0}
-    .instr-note{font-size:0.86rem;color:var(--muted);margin-top:8px}
+    .smallnote{font-size:0.82rem;color:var(--muted)}
+    .hide{display:none}
 
-    .section-button{width:100%;background:linear-gradient(180deg,#3ea8ff,#1f78d1);color:white;border:none;padding:10px 12px;font-weight:700;text-transform:uppercase;font-size:0.9rem;display:block}
+    /* animations */
+    .fade{transition:all .28s cubic-bezier(.2,.9,.2,1);opacity:1;transform:translateY(0)}
+    .fade.hide{opacity:0;transform:translateY(-6px)}
 
-    .form{padding:12px 0 18px;background:linear-gradient(180deg,#fbfdff,#f5f9ff)}
-    .field-label{display:block;background:linear-gradient(180deg,#2b6fa8,#1f4f7a);color:white;font-weight:700;padding:8px 14px;font-size:0.9rem}
-    .field{padding:10px 14px;background:var(--card-bg);border-bottom:1px solid rgba(16,24,40,0.03)}
-    input[type="number"], select{width:100%;display:block;background:var(--input-bg);color:var(--input-color);border:none;padding:12px;font-size:0.95rem;border-radius:8px;box-shadow:inset 0 -2px 6px rgba(0,0,0,0.18)}
-    input::placeholder{color:#cbd6e0}
+    footer.foot{grid-column:1/-1;text-align:center;color:var(--muted);font-size:0.82rem;padding-top:6px}
 
-    .two-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-    .action-btn{margin:14px;width:calc(100% - 28px);background:linear-gradient(180deg,#2ca3ff,#1d78d1);color:white;font-weight:800;padding:12px;border-radius:10px;border:none;font-size:0.98rem}
-
-    .results, .three-way-results, .two-way-results, .draw-protection{padding-bottom:12px}
-    .result-row{padding:12px 14px;border-top:1px solid rgba(16,24,40,0.03);font-size:0.95rem;display:flex;align-items:center;justify-content:space-between}
-    .label-only{background:linear-gradient(180deg,#f7fbff,#f4f9ff);color:var(--muted);font-weight:700}
-    .value{background:linear-gradient(180deg,var(--green-1),var(--green-2));color:#155724;font-weight:800;padding-left:14px;padding-right:14px;border-radius:6px}
-    .profit{background:linear-gradient(180deg,var(--green-1),var(--green-2));color:#0b662e;font-weight:900}
-    .danger{background:linear-gradient(180deg,var(--pink-1),var(--pink-2));color:#7a1f32;font-weight:800}
-    .neutral{background:#f3f6fb;color:var(--muted);font-weight:700}
-
-    .small{font-size:0.85rem;color:var(--muted)}
-
-    /* new profit positive/negative */
-    .new-profit-positive{background:linear-gradient(180deg,var(--green-1),var(--green-2));color:#155724;font-weight:800}
-    .new-profit-negative{background:linear-gradient(180deg,var(--pink-1),var(--pink-2));color:#7a1f32;font-weight:800}
-
-    .footer{padding:12px 14px;text-align:center;color:var(--muted);font-size:0.78rem;border-top:1px solid rgba(16,24,40,0.04)}
-
-    @media (min-width:520px){.page-wrap{padding:40px}.container{border-radius:22px}}
+    @media (max-width:980px){.app{grid-template-columns:1fr;}.card{padding:14px}}
   </style>
 </head>
 <body>
-  <div class="page-wrap">
-    <div class="container">
-      <header class="hero">
-        <h1>2-Way and 3-Way Arbitrage Calculator</h1>
-        <p>Includes draw-protection analysis and minimum-bet site handling</p>
+  <div class="wrap">
+    <div class="app">
+      <header class="app-head">
+        <div class="card" style="flex:0 0 280px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#2f9bff"/></svg>
+            <div class="brand"><h1>Arb Studio</h1><p>2‑Way & 3‑Way arbitrage — draw protection</p></div>
+          </div>
+
+          <div class="controls">
+            <div>
+              <label class="small">Mode</label>
+              <div class="input"><select id="modeSelect"><option value="2">2‑Way (no draw)</option><option value="3">3‑Way (draw included)</option></select></div>
+            </div>
+
+            <div>
+              <label class="small">Team A Odds (decimal)</label>
+              <div class="input"><input id="oddsA" type="number" step="0.01" placeholder="2.10" /></div>
+            </div>
+
+            <div>
+              <label class="small">Team B Odds (decimal)</label>
+              <div class="input"><input id="oddsB" type="number" step="0.01" placeholder="2.00" /></div>
+            </div>
+
+            <div id="drawRow">
+              <label class="small">Draw/Tie Odds (decimal) — optional for 2‑Way</label>
+              <div class="input"><input id="oddsDraw" type="number" step="0.01" placeholder="3.20" /></div>
+            </div>
+
+            <div style="display:flex;gap:8px">
+              <div style="flex:1">
+                <label class="small">Min Bet Applies To</label>
+                <div class="input"><select id="minBetApplies"><option value="none">None</option><option value="A">Team A</option><option value="B">Team B</option><option value="D">Draw</option></select></div>
+              </div>
+              <div style="width:120px">
+                <label class="small">Minimum Bet (रु)</label>
+                <div class="input"><input id="minBet" type="number" step="0.01" placeholder="100" /></div>
+              </div>
+            </div>
+
+            <div>
+              <label class="small">Total Stake (रु) — optional</label>
+              <div class="input"><input id="totalStake" type="number" step="0.01" placeholder="Leave blank for auto" /></div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button id="calcBtn" class="btn">Calculate</button>
+              <button id="resetBtn" class="ghost">Reset</button>
+            </div>
+
+            <div class="smallnote">All amounts shown in NPR (रु). When in 2‑Way mode, draw analytics only appear if draw odds are provided.</div>
+          </div>
+        </div>
+
+        <div class="card" style="flex:1;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <h2 style="margin:0;font-size:1.02rem">Results</h2>
+              <div class="smallnote">Interactive analysis — switch mode to hide/show sections</div>
+            </div>
+            <div class="smallnote" id="arbBadge">Status: —</div>
+          </div>
+
+          <div id="resultsPane" class="results">
+            <!-- Probabilities -->
+            <div class="tile"><h3>Team A Probability</h3><div class="value-pill" id="probA">--</div></div>
+            <div class="tile"><h3>Team B Probability</h3><div class="value-pill" id="probB">--</div></div>
+            <div id="probDrawTile" class="tile"><h3>Draw Probability</h3><div class="value-pill" id="probD">--</div></div>
+
+            <div id="implied2Tile" class="tile"><h3>Implied Probability (2‑way)</h3><div class="value-pill" id="implied2">--</div></div>
+            <div id="implied3Tile" class="tile"><h3>Implied Probability (3‑way)</h3><div class="value-pill" id="implied3">--</div></div>
+
+            <!-- 2-way area -->
+            <div id="twoWayArea">
+              <div class="tile"><h3>2‑Way — Stake on A</h3><div class="value-pill" id="stakeA">रु 0.00</div></div>
+              <div class="tile"><h3>2‑Way — Stake on B</h3><div class="value-pill" id="stakeB">रु 0.00</div></div>
+              <div class="tile"><h3>Total Stake</h3><div class="value-pill" id="totalStk">रु 0.00</div></div>
+              <div class="tile"><h3>Guaranteed Payout</h3><div class="value-pill" id="payout">रु 0.00</div></div>
+              <div class="tile"><h3>Profit (2‑way)</h3><div class="value-pill positive" id="profit">रु 0.00</div></div>
+              <div class="tile"><h3>Profit % (2‑way)</h3><div class="value-pill" id="profitPerc">0%</div></div>
+            </div>
+
+            <!-- 3-way area -->
+            <div id="threeWayArea">
+              <div class="tile"><h3>3‑Way — Stake on A</h3><div class="value-pill" id="stake3A">रु 0.00</div></div>
+              <div class="tile"><h3>3‑Way — Stake on B</h3><div class="value-pill" id="stake3B">रु 0.00</div></div>
+              <div class="tile"><h3>3‑Way — Stake on Draw</h3><div class="value-pill" id="stake3D">रु 0.00</div></div>
+              <div class="tile"><h3>3‑Way — Total Stake</h3><div class="value-pill" id="totalStk3">रु 0.00</div></div>
+              <div class="tile"><h3>Guaranteed Payout (each)</h3><div class="value-pill" id="payout3">रु 0.00</div></div>
+              <div class="tile"><h3>Profit (3‑way)</h3><div class="value-pill" id="profit3">रु 0.00</div></div>
+              <div class="tile"><h3>Profit % (3‑way)</h3><div class="value-pill" id="profitPerc3">0%</div></div>
+            </div>
+
+            <!-- draw protection area (only for 2-way when draw odds present) -->
+            <div id="drawArea">
+              <div class="tile"><h3>Draw Probability</h3><div class="value-pill" id="drawProb">--</div></div>
+              <div class="tile"><h3>Original 2‑Way Profit</h3><div class="value-pill" id="origProfit">रु 0.00</div></div>
+              <div class="tile"><h3>Draw Stake Needed (to break even)</h3><div class="value-pill" id="drawStakeNeeded">--</div></div>
+              <div class="tile"><h3>Protected Profit (after draw bet)</h3><div class="value-pill" id="protProfit">--</div></div>
+              <div class="tile"><h3>Profit Reduction</h3><div class="value-pill" id="profitReduction">--</div></div>
+              <div class="tile"><h3>New Profit % (post‑draw)</h3><div class="value-pill" id="newProfitPerc">--</div></div>
+              <div class="tile"><h3>Recommendation</h3><div class="value-pill" id="recommendation">--</div></div>
+              <div class="tile"><h3>Cost vs Benefit</h3><div class="value-pill muted" id="costbenefit">--</div></div>
+            </div>
+
+          </div>
+        </div>
       </header>
 
-      <section class="panel instructions">
-        <div class="panel-title">Instructions:</div>
-        <div class="instructions">
-          <ul class="instr-list">
-            <li>Enter decimal odds from the bookmakers in the fields below.</li>
-            <li>If one of the websites requires a minimum bet, choose which outcome it applies to using "Min Bet Applies To" and enter the minimum amount in the "Minimum Bet" field. Put the odds from that website in the corresponding outcome field (Team A / Team B / Draw).</li>
-            <li>Draw odds are optional. If provided, the calculator will show a 3-way analysis and a draw-protection suggestion.</li>
-            <li>If you leave Total Stake blank the app will pick a sensible default (max(100, minBet*2)).</li>
-            <li>Currency set to NPR only (rupee) — amounts show as रु ...</li>
-          </ul>
-          <div class="instr-note">Example: If bookmaker X requires a minimum ₹200 on Team A, select "Team A" in "Min Bet Applies To", enter 200 in Minimum Bet, and put bookmaker X's odds into Team A odds field.</div>
-        </div>
-      </section>
-
-      <button class="section-button">INPUT PARAMETERS</button>
-
-      <form id="arbForm" class="panel form" autocomplete="off">
-        <label class="field-label">Team A Win Odds</label>
-        <div class="field"><input id="oddsA" type="number" step="0.01" placeholder="2.1" required></div>
-
-        <label class="field-label">Team B Win Odds</label>
-        <div class="field"><input id="oddsB" type="number" step="0.01" placeholder="2.0" required></div>
-
-        <label class="field-label">Draw/Tie Odds (Optional)</label>
-        <div class="field"><input id="oddsDraw" type="number" step="0.01" placeholder="3.2"></div>
-
-        <div class="two-cols">
-          <div>
-            <label class="field-label">Min Bet Applies To</label>
-            <div class="field">
-              <select id="minBetApplies">
-                <option value="none">None</option>
-                <option value="A">Team A</option>
-                <option value="B">Team B</option>
-                <option value="D">Draw</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="field-label">Minimum Bet Amount (NPR)</label>
-            <div class="field"><input id="minBet" type="number" step="0.01" placeholder="100"></div>
-          </div>
-        </div>
-
-        <label class="field-label">Total Stake (Optional)</label>
-        <div class="field"><input id="totalStake" type="number" step="0.01" placeholder="Leave blank for auto"></div>
-
-        <div style="padding:10px 14px"><button type="submit" class="action-btn">CALCULATE</button></div>
-      </form>
-
-      <section class="panel results">
-        <div class="panel-title">CALCULATIONS</div>
-
-        <div class="result-row label-only">Team A Win Probability</div>
-        <div class="result-row value" id="probA">--</div>
-
-        <div class="result-row label-only">Team B Win Probability</div>
-        <div class="result-row value" id="probB">--</div>
-
-        <div class="result-row label-only">Draw Win Probability</div>
-        <div class="result-row value" id="probD">--</div>
-
-        <div class="result-row label-only">Total Implied Probability (2-way)</div>
-        <div class="result-row neutral" id="implied2">--</div>
-
-        <div class="result-row label-only">Total Implied Probability (3-way)</div>
-        <div class="result-row neutral" id="implied3">--</div>
-
-        <div class="result-row label-only">Arbitrage Possible (2-way)</div>
-        <div class="result-row neutral" id="arb2">--</div>
-
-        <div class="result-row label-only">Arbitrage Possible (3-way)</div>
-        <div class="result-row neutral" id="arb3">--</div>
-
-        <div class="result-row label-only">Warning</div>
-        <div class="result-row danger" id="warning">--</div>
-      </section>
-
-      <section class="panel two-way-results">
-        <div class="panel-title">2-WAY ARBITRAGE RESULTS</div>
-
-        <div class="result-row label-only">Stake on Team A</div>
-        <div class="result-row value" id="stakeA">रु 0.00</div>
-
-        <div class="result-row label-only">Stake on Team B</div>
-        <div class="result-row value" id="stakeB">रु 0.00</div>
-
-        <div class="result-row label-only">Total Stake</div>
-        <div class="result-row value" id="totalStk">रु 0.00</div>
-
-        <div class="result-row label-only">Guaranteed Payout</div>
-        <div class="result-row value" id="payout">रु 0.00</div>
-
-        <div class="result-row label-only">Profit</div>
-        <div class="result-row profit" id="profit">रु 0.00</div>
-
-        <div class="result-row label-only">Profit Percentage</div>
-        <div class="result-row value" id="profitPerc">0%</div>
-      </section>
-
-      <section class="panel three-way-results">
-        <div class="panel-title">3-WAY ARBITRAGE RESULTS</div>
-
-        <div class="result-row label-only">Stake on Team A</div>
-        <div class="result-row value" id="stake3A">रु 0.00</div>
-
-        <div class="result-row label-only">Stake on Team B</div>
-        <div class="result-row value" id="stake3B">रु 0.00</div>
-
-        <div class="result-row label-only">Stake on Draw</div>
-        <div class="result-row value" id="stake3D">रु 0.00</div>
-
-        <div class="result-row label-only">Total Stake</div>
-        <div class="result-row value" id="totalStk3">रु 0.00</div>
-
-        <div class="result-row label-only">Guaranteed Payout (each outcome)</div>
-        <div class="result-row value" id="payout3">रु 0.00</div>
-
-        <div class="result-row label-only">Profit (3-way)</div>
-        <div class="result-row profit" id="profit3">रु 0.00</div>
-
-        <div class="result-row label-only">Profit Percentage (3-way)</div>
-        <div class="result-row value" id="profitPerc3">0%</div>
-      </section>
-
-      <section class="panel draw-protection">
-        <div class="panel-title">DRAW PROTECTION ANALYSIS</div>
-
-        <div class="result-row label-only">Draw Probability</div>
-        <div class="result-row value" id="drawProb">--</div>
-
-        <div class="result-row label-only">Original 2-Way Profit</div>
-        <div class="result-row value" id="origProfit">रु 0.00</div>
-
-        <div class="result-row label-only">Draw Stake Needed (to break even on draw)</div>
-        <div class="result-row danger" id="drawStakeNeeded">--</div>
-
-        <div class="result-row label-only">Protected Profit (after placing draw bet)</div>
-        <div class="result-row value" id="protProfit">--</div>
-
-        <div class="result-row label-only">Profit Reduction</div>
-        <div class="result-row danger" id="profitReduction">--</div>
-
-        <div class="result-row label-only">New Profit Percentage (post-draw)</div>
-        <div class="result-row value" id="newProfitPerc">--</div>
-
-        <div class="result-row label-only">Recommendation</div>
-        <div class="result-row neutral" id="recommendation">--</div>
-
-        <div class="result-row label-only">Cost vs Benefit</div>
-        <div class="result-row neutral" id="costbenefit">--</div>
-      </section>
-
-      <footer class="footer">Tip: open devtools Mobile view to preview phone layout.</footer>
+      <footer class="foot">Tip: choose mode to switch between 2‑Way and 3‑Way analysis. Draw analytics shown in 2‑Way only if draw odds are entered.</footer>
     </div>
   </div>
 
   <script>
     // helpers
-    function fmt(n){ if (n === null || n === undefined || isNaN(n)) return '--'; return 'रु ' + Number(n).toFixed(2); }
+    const $ = id => document.getElementById(id);
+    function fmt(n){ if (n===null||n===undefined||isNaN(n)) return '--'; return 'रु ' + Number(n).toFixed(2); }
     function pct(v){ if (v===null||v===undefined||isNaN(v)) return '--'; return (v*100).toFixed(2) + '%'; }
 
-    document.getElementById('arbForm').addEventListener('submit', function(e){
-      e.preventDefault();
-      const oddsA = parseFloat(document.getElementById('oddsA').value);
-      const oddsB = parseFloat(document.getElementById('oddsB').value);
-      const oddsD = parseFloat(document.getElementById('oddsDraw').value);
-      const minBet = parseFloat(document.getElementById('minBet').value) || 0;
-      const minApplies = document.getElementById('minBetApplies').value; // 'A','B','D','none'
-      let totalStakeInput = parseFloat(document.getElementById('totalStake').value);
+    // elements
+    const modeSelect = $('modeSelect');
+    const drawRow = $('drawRow');
+    const twoWayArea = $('twoWayArea');
+    const threeWayArea = $('threeWayArea');
+    const drawArea = $('drawArea');
+    const probDrawTile = $('probDrawTile');
+    const implied3Tile = $('implied3Tile');
+    const implied2Tile = $('implied2Tile');
+    const arbBadge = $('arbBadge');
 
-      if (!oddsA || !oddsB || oddsA<=1 || oddsB<=1){ alert('Please enter valid decimal odds (>1) for Team A and Team B.'); return; }
+    function setVisibility(){
+      const mode = modeSelect.value; // '2' or '3'
+      if (mode === '2'){
+        twoWayArea.classList.remove('hide');
+        implied2Tile.classList.remove('hide');
+        implied3Tile.classList.add('hide');
+        threeWayArea.classList.add('hide');
+        // drawRow stays visible but drawArea only if draw odds present after calculate
+      } else {
+        twoWayArea.classList.add('hide');
+        implied2Tile.classList.add('hide');
+        threeWayArea.classList.remove('hide');
+        implied3Tile.classList.remove('hide');
+        drawArea.classList.add('hide');
+        probDrawTile.classList.remove('hide');
+      }
+    }
 
-      // probabilities
-      const pA = 1/oddsA; const pB = 1/oddsB; const pD = (oddsD && oddsD>1) ? 1/oddsD : 0;
+    modeSelect.addEventListener('change', ()=>{ setVisibility(); clearResults(); });
+
+    function clearResults(){
+      const ids = ['probA','probB','probD','implied2','implied3','stakeA','stakeB','totalStk','payout','profit','profitPerc','stake3A','stake3B','stake3D','totalStk3','payout3','profit3','profitPerc3','drawProb','origProfit','drawStakeNeeded','protProfit','profitReduction','newProfitPerc','recommendation','costbenefit'];
+      ids.forEach(id=>{ const el=$(id); if (el) el.textContent = (id==='profit'?'रु 0.00':'--'); });
+      arbBadge.textContent = 'Status: —';
+    }
+
+    function validateOdds(a,b,draw){
+      if (!a || a<=1 || !b || b<=1) { alert('Please enter valid decimal odds (>1) for Team A and Team B.'); return false; }
+      if (draw && draw<=1){ alert('If provided, draw odds must be > 1'); return false; }
+      return true;
+    }
+
+    function calculate(){
+      const oddsA = parseFloat($('oddsA').value);
+      const oddsB = parseFloat($('oddsB').value);
+      const oddsD = parseFloat($('oddsDraw').value);
+      const minBet = parseFloat($('minBet').value) || 0;
+      const minApplies = $('minBetApplies').value;
+      const totalStakeInput = parseFloat($('totalStake').value);
+
+      if (!validateOdds(oddsA,oddsB,oddsD)) return;
+
+      const pA = 1/oddsA; const pB = 1/oddsB; const pD = (oddsD && oddsD>1)? 1/oddsD : 0;
       const sum2 = pA + pB; const sum3 = pA + pB + pD;
 
-      // total stake default
       let totalStake = (totalStakeInput && totalStakeInput>0) ? totalStakeInput : Math.max(100, (minBet||0)*2 || 100);
 
-      // 2-way stakes (proportional to implied probs for available two outcomes)
+      // 2-way calculations
       const stakeA = totalStake * (pA / sum2);
       const stakeB = totalStake * (pB / sum2);
-      const payout2 = stakeA * oddsA; // equal
+      const payout2 = stakeA * oddsA; // common payout
       const profit2 = payout2 - totalStake;
       const profitPerc2 = (profit2/totalStake)*100;
 
-      // 3-way if draw provided
-      let stake3A='--', stake3B='--', stake3D='--', payout3='--', profit3='--', profitPerc3='--';
-      if (oddsD && oddsD>1){
-        const stake3a = totalStake * (pA / sum3);
-        const stake3b = totalStake * (pB / sum3);
-        const stake3d = totalStake * (pD / sum3);
-        const payout_3 = stake3a * oddsA; // equal to others
-        const profit_3 = payout_3 - totalStake;
-        stake3A = fmt(stake3a); stake3B = fmt(stake3b); stake3D = fmt(stake3d); payout3 = fmt(payout_3); profit3 = fmt(profit_3); profitPerc3 = ((profit_3/totalStake)*100).toFixed(2) + '%';
+      // 3-way
+      let stake3a, stake3b, stake3d, payout3val, profit3val, profitPerc3val;
+      if (pD>0){
+        stake3a = totalStake * (pA / sum3);
+        stake3b = totalStake * (pB / sum3);
+        stake3d = totalStake * (pD / sum3);
+        payout3val = stake3a * oddsA;
+        profit3val = payout3val - totalStake;
+        profitPerc3val = (profit3val/totalStake)*100;
       }
 
-      // draw protection calculations: attempt to hedge draw so draw outcome doesn't cause total loss
-      let drawProb = (oddsD && oddsD>1) ? (1/oddsD) : null;
-      let drawStakeNeeded = null, protectedProfit=null, profitReduction=null, newProfitPercentage=null;
-      if (oddsD && oddsD>1){
-        // when draw happens, A and B lose => loss = totalStake
-        // need D such that D*(oddsD - 1) >= totalStake
+      // draw protection (only meaningful when in 2-way and draw provided)
+      let drawStakeNeeded = null, protectedProfit=null, profitReduction=null, newProfitPercentage=null, drawProb=null;
+      if (pD>0){
+        drawProb = pD;
         drawStakeNeeded = totalStake / (oddsD - 1);
-        protectedProfit = profit2 - drawStakeNeeded; // placing draw stake reduces original profit
+        protectedProfit = profit2 - drawStakeNeeded;
         profitReduction = drawStakeNeeded;
         const totalOutlay = totalStake + drawStakeNeeded;
-        if (isFinite(totalOutlay) && totalOutlay>0){ newProfitPercentage = (protectedProfit/totalOutlay)*100; }
+        if (isFinite(totalOutlay) && totalOutlay>0) newProfitPercentage = (protectedProfit/totalOutlay)*100;
       }
 
-      // Recommendation logic: prefer protectedProfit positive AND newProfitPercentage positive and cost reasonable
+      // recommendation logic
       let recommendation='--', costbenefit='--';
       if (drawStakeNeeded === null || !isFinite(drawStakeNeeded)){
         recommendation='N/A'; costbenefit='N/A';
       } else {
         if (protectedProfit <= 0 || newProfitPercentage === null || newProfitPercentage <= 0){
-          recommendation = '❌ Not Recommended';
-          costbenefit = 'Protection eliminates profit or yields negative return';
+          recommendation = '❌ Not Recommended'; costbenefit = 'Protection eliminates profit or yields negative return';
         } else {
           const costRatio = drawStakeNeeded/totalStake;
           if (costRatio > 1.5){ recommendation='❌ Not Recommended'; costbenefit='Very High Cost'; }
@@ -306,71 +284,116 @@
         }
       }
 
-      // If min bet applies, ensure stake on that outcome meets minBet; if not, suggest increasing totalStake
+      // min bet check
       let minWarning='--';
       if (minApplies !== 'none' && minBet>0){
         let stakeOn = 0;
         if (minApplies==='A') stakeOn = stakeA;
         if (minApplies==='B') stakeOn = stakeB;
-        if (minApplies==='D') stakeOn = (oddsD && oddsD>1) ? (totalStake * (pD / sum3)) : 0; // approximate
-        if (stakeOn < minBet){ minWarning = 'Stake on selected outcome is below minimum — consider raising Total Stake or not using that market'; } else { minWarning='--'; }
+        if (minApplies==='D') stakeOn = (pD>0)? (totalStake * (pD / sum3)) : 0;
+        if (stakeOn < minBet){ minWarning = 'Stake on selected outcome is below minimum — consider raising Total Stake or not using that market'; }
       }
 
       // populate UI
-      document.getElementById('probA').textContent = pct(pA);
-      document.getElementById('probB').textContent = pct(pB);
-      document.getElementById('probD').textContent = (pD? pct(pD): '--');
-      document.getElementById('implied2').textContent = (sum2*100).toFixed(2) + '%';
-      document.getElementById('implied3').textContent = (sum3*100).toFixed(2) + '%';
-      document.getElementById('arb2').textContent = (sum2 < 1) ? 'Yes' : 'No';
-      document.getElementById('arb3').textContent = (oddsD && oddsD>1) ? ((sum3 < 1) ? 'Yes' : 'No') : 'N/A';
-      document.getElementById('warning').textContent = (sum2<1 || (sum3<1 && oddsD>1))? (minWarning==='--'? '--':minWarning) : 'No arbitrage detected';
+      $('probA').textContent = pct(pA);
+      $('probB').textContent = pct(pB);
+      $('probD').textContent = pD? pct(pD): '--';
+      $('implied2').textContent = (sum2*100).toFixed(2) + '%';
+      $('implied3').textContent = (sum3*100).toFixed(2) + '%';
 
-      document.getElementById('stakeA').textContent = fmt(stakeA);
-      document.getElementById('stakeB').textContent = fmt(stakeB);
-      document.getElementById('totalStk').textContent = fmt(totalStake);
-      document.getElementById('payout').textContent = fmt(payout2);
-      document.getElementById('profit').textContent = fmt(profit2);
-      document.getElementById('profitPerc').textContent = profitPerc2.toFixed(2) + '%';
+      $('stakeA').textContent = fmt(stakeA);
+      $('stakeB').textContent = fmt(stakeB);
+      $('totalStk').textContent = fmt(totalStake);
+      $('payout').textContent = fmt(payout2);
+      $('profit').textContent = fmt(profit2);
+      $('profitPerc').textContent = profitPerc2.toFixed(2) + '%';
 
-      document.getElementById('stake3A').textContent = stake3A;
-      document.getElementById('stake3B').textContent = stake3B;
-      document.getElementById('stake3D').textContent = stake3D;
-      document.getElementById('totalStk3').textContent = fmt(totalStake);
-      document.getElementById('payout3').textContent = payout3;
-      document.getElementById('profit3').textContent = profit3;
-      document.getElementById('profitPerc3').textContent = profitPerc3;
-
-      document.getElementById('drawProb').textContent = drawProb? pct(drawProb): '--';
-      document.getElementById('origProfit').textContent = fmt(profit2);
-      document.getElementById('drawStakeNeeded').textContent = drawStakeNeeded? fmt(drawStakeNeeded): '--';
-      document.getElementById('protProfit').textContent = (protectedProfit!==null && protectedProfit!==undefined && !isNaN(protectedProfit))? fmt(protectedProfit): '--';
-      document.getElementById('profitReduction').textContent = profitReduction? fmt(profitReduction): '--';
-
-      // new profit percentage styling
-      const newProfitEl = document.getElementById('newProfitPerc');
-      if (newProfitPercentage===null || newProfitPercentage===undefined || isNaN(newProfitPercentage)){
-        newProfitEl.textContent = '--'; newProfitEl.className='result-row value';
+      if (pD>0){
+        $('stake3A').textContent = fmt(stake3a);
+        $('stake3B').textContent = fmt(stake3b);
+        $('stake3D').textContent = fmt(stake3d);
+        $('totalStk3').textContent = fmt(totalStake);
+        $('payout3').textContent = fmt(payout3val);
+        $('profit3').textContent = fmt(profit3val);
+        $('profitPerc3').textContent = profitPerc3val.toFixed(2) + '%';
       } else {
-        const val = Number(newProfitPercentage);
-        const txt = Math.abs(val).toFixed(2) + '%';
-        if (val>0){ newProfitEl.textContent = txt; newProfitEl.className='result-row new-profit-positive'; }
-        else if (val<0){ newProfitEl.textContent = '-' + txt; newProfitEl.className='result-row new-profit-negative'; }
-        else { newProfitEl.textContent = '0.00%'; newProfitEl.className='result-row value'; }
+        $('stake3A').textContent = 'रु 0.00'; $('stake3B').textContent = 'रु 0.00'; $('stake3D').textContent = 'रु 0.00';
+        $('totalStk3').textContent = 'रु 0.00'; $('payout3').textContent = 'रु 0.00'; $('profit3').textContent = 'रु 0.00'; $('profitPerc3').textContent = '0%';
       }
 
-      document.getElementById('recommendation').textContent = recommendation;
-      document.getElementById('costbenefit').textContent = costbenefit;
+      // draw area
+      if (modeSelect.value === '2'){
+        if (pD>0){
+          drawArea.classList.remove('hide');
+          probDrawTile.classList.remove('hide');
+          $('drawProb').textContent = pct(drawProb);
+          $('origProfit').textContent = fmt(profit2);
 
-    });
+          // draw stake: make it neutral/white (no red)
+          const dsEl = $('drawStakeNeeded');
+          dsEl.textContent = fmt(drawStakeNeeded);
+          dsEl.className = 'value-pill';
 
-    // preload sample
-    window.addEventListener('load', ()=>{
-      document.getElementById('oddsA').value='2.1';
-      document.getElementById('oddsB').value='2.0';
-      document.getElementById('oddsDraw').value='3.2';
-      document.getElementById('minBet').value='100';
-    });
+          // protected profit: green if positive, red with minus if negative
+          const ppEl = $('protProfit');
+          if (protectedProfit===null||isNaN(protectedProfit)){
+            ppEl.textContent = '--'; ppEl.className = 'value-pill';
+          } else {
+            const v = Number(protectedProfit);
+            if (v>0){ ppEl.textContent = fmt(v); ppEl.className = 'value-pill positive'; }
+            else if (v<0){ ppEl.textContent = '-' + fmt(Math.abs(v)); ppEl.className = 'value-pill negative'; }
+            else { ppEl.textContent = fmt(0); ppEl.className = 'value-pill'; }
+          }
+
+          $('profitReduction').textContent = fmt(profitReduction);
+
+          const newProfitEl = $('newProfitPerc');
+          if (newProfitPercentage===null||isNaN(newProfitPercentage)) newProfitEl.textContent='--';
+          else {
+            const val = Number(newProfitPercentage);
+            const txt = Math.abs(val).toFixed(2) + '%';
+            newProfitEl.textContent = (val<0? '-' + txt : txt);
+            newProfitEl.className = 'value-pill ' + (val>0? 'positive' : (val<0? 'negative':''));
+          }
+
+          // recommendation and costbenefit color changes
+          const recEl = $('recommendation');
+          recEl.textContent = recommendation;
+          if (recommendation.includes('Not Recommended') || recommendation.includes('❌')) recEl.className = 'value-pill negative';
+          else if (recommendation.includes('Maybe Worth It') || recommendation.includes('✅')) recEl.className = 'value-pill positive';
+          else recEl.className = 'value-pill';
+
+          const cbEl = $('costbenefit');
+          cbEl.textContent = costbenefit;
+          if (costbenefit.includes('Low Cost') || costbenefit.includes('Maybe')) cbEl.className = 'value-pill positive';
+          else if (costbenefit.includes('Very High') || costbenefit.includes('High Cost') || costbenefit.includes('eliminates')) cbEl.className = 'value-pill negative';
+          else cbEl.className = 'value-pill';
+
+        } else {
+          drawArea.classList.add('hide');
+          probDrawTile.classList.add('hide');
+        }
+      }
+
+      // arb badges
+      $('implied2').parentElement.classList.remove('positive','negative');
+      if (sum2 < 1) { $('arbBadge').textContent = 'Status: 2‑Way arbitrage possible'; }
+      else { $('arbBadge').textContent = 'Status: No 2‑Way arbitrage'; }
+      if (pD>0){ $('implied3').parentElement.classList.remove('positive','negative'); if (sum3 < 1) $('arbBadge').textContent = 'Status: 3‑Way arbitrage possible'; }
+
+      // min warning wiring
+      if (minWarning !== '--') alert(minWarning);
+    }
+
+    // wire up
+    $('calcBtn').addEventListener('click', (e)=>{ e.preventDefault(); calculate(); });
+    $('resetBtn').addEventListener('click', (e)=>{ e.preventDefault(); document.querySelectorAll('input').forEach(i=>i.value=''); clearResults(); });
+
+    // initial state
+    setVisibility(); clearResults();
+
+    // preload helpful sample
+    window.addEventListener('load', ()=>{ $('oddsA').value='2.1'; $('oddsB').value='2.0'; $('oddsDraw').value='3.2'; $('minBet').value='100'; });
   </script>
 </body>
 </html>
