@@ -44,13 +44,16 @@
     .tile h3{margin:0;font-size:0.86rem;color:var(--muted)}
     .big{font-weight:800;color:#e6f7ff}
     .muted{color:var(--muted)}
-    .value-pill{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));font-weight:800;color:inherit}
+    .value-pill{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));font-weight:800;color:inherit;min-width:90px;text-align:right}
 
     .positive{background:linear-gradient(90deg, rgba(40,199,111,0.12), rgba(40,199,111,0.06));color:var(--success);border-radius:8px;padding:6px 8px;font-weight:800}
     .negative{background:linear-gradient(90deg, rgba(255,107,122,0.08), rgba(255,107,122,0.04));color:var(--danger);border-radius:8px;padding:6px 8px;font-weight:800}
 
     .smallnote{font-size:0.82rem;color:var(--muted)}
     .hide{display:none}
+
+    /* suggestions content formatting */
+    .suggestions-text{white-space:pre-wrap;text-align:left;max-width:640px}
 
     /* animations */
     .fade{transition:all .28s cubic-bezier(.2,.9,.2,1);opacity:1;transform:translateY(0)}
@@ -113,7 +116,7 @@
               <button id="resetBtn" class="ghost">Reset</button>
             </div>
 
-            <div class="smallnote">All amounts shown in NPR (रु). When in 2‑Way mode, draw analytics only appear if draw odds are provided.</div>
+            <div class="smallnote">All amounts shown in NPR (रु). When in 2‑Way mode, draw analytics only appear if draw odds are entered.</div>
           </div>
         </div>
 
@@ -141,7 +144,7 @@
               <div class="tile"><h3>2‑Way — Stake on B</h3><div class="value-pill" id="stakeB">रु 0.00</div></div>
               <div class="tile"><h3>Total Stake</h3><div class="value-pill" id="totalStk">रु 0.00</div></div>
               <div class="tile"><h3>Guaranteed Payout</h3><div class="value-pill" id="payout">रु 0.00</div></div>
-              <div class="tile"><h3>Profit (2‑way)</h3><div class="value-pill positive" id="profit">रु 0.00</div></div>
+              <div class="tile"><h3>Profit (2‑way)</h3><div class="value-pill" id="profit">रु 0.00</div></div>
               <div class="tile"><h3>Profit % (2‑way)</h3><div class="value-pill" id="profitPerc">0%</div></div>
             </div>
 
@@ -166,7 +169,12 @@
               <div class="tile"><h3>New Profit % (post‑draw)</h3><div class="value-pill" id="newProfitPerc">--</div></div>
               <div class="tile"><h3>Recommendation</h3><div class="value-pill" id="recommendation">--</div></div>
               <div class="tile"><h3>Cost vs Benefit</h3><div class="value-pill muted" id="costbenefit">--</div></div>
+
+              <div class="tile hide" id="threeWaySuggestion"><h3>3‑Way vs Hedging</h3><div class="value-pill" id="threeWaySuggestText">--</div></div>
             </div>
+
+            <!-- Suggestions -->
+            <div id="suggestionsArea" class="tile hide"><h3>Pre‑bet Suggestions / Checklist</h3><div class="value-pill muted suggestions-text" id="suggestionsText">--</div></div>
 
           </div>
         </div>
@@ -192,6 +200,10 @@
     const implied3Tile = $('implied3Tile');
     const implied2Tile = $('implied2Tile');
     const arbBadge = $('arbBadge');
+    const threeWaySuggestion = $('threeWaySuggestion');
+    const threeWaySuggestText = $('threeWaySuggestText');
+    const suggestionsArea = $('suggestionsArea');
+    const suggestionsText = $('suggestionsText');
 
     function setVisibility(){
       const mode = modeSelect.value; // '2' or '3'
@@ -200,7 +212,6 @@
         implied2Tile.classList.remove('hide');
         implied3Tile.classList.add('hide');
         threeWayArea.classList.add('hide');
-        // drawRow stays visible but drawArea only if draw odds present after calculate
       } else {
         twoWayArea.classList.add('hide');
         implied2Tile.classList.add('hide');
@@ -214,15 +225,43 @@
     modeSelect.addEventListener('change', ()=>{ setVisibility(); clearResults(); });
 
     function clearResults(){
-      const ids = ['probA','probB','probD','implied2','implied3','stakeA','stakeB','totalStk','payout','profit','profitPerc','stake3A','stake3B','stake3D','totalStk3','payout3','profit3','profitPerc3','drawProb','origProfit','drawStakeNeeded','protProfit','profitReduction','newProfitPerc','recommendation','costbenefit'];
-      ids.forEach(id=>{ const el=$(id); if (el) el.textContent = (id==='profit'?'रु 0.00':'--'); });
+      const ids = ['probA','probB','probD','implied2','implied3','stakeA','stakeB','totalStk','payout','profit','profitPerc','stake3A','stake3B','stake3D','totalStk3','payout3','profit3','profitPerc3','drawProb','origProfit','drawStakeNeeded','protProfit','profitReduction','newProfitPerc','recommendation','costbenefit','threeWaySuggestText','suggestionsText'];
+      ids.forEach(id=>{
+        const el = $(id);
+        if (!el) return;
+        // default textual values
+        if (id === 'profit' || id === 'profit3' || id === 'origProfit') el.textContent = 'रु 0.00';
+        else if (id === 'profitPerc' || id === 'profitPerc3' || id === 'newProfitPerc') el.textContent = '0%';
+        else el.textContent = '--';
+        el.className = 'value-pill';
+      });
       arbBadge.textContent = 'Status: —';
+      threeWaySuggestion.classList.add('hide');
+      suggestionsArea.classList.add('hide');
     }
 
     function validateOdds(a,b,draw){
       if (!a || a<=1 || !b || b<=1) { alert('Please enter valid decimal odds (>1) for Team A and Team B.'); return false; }
+      if (modeSelect.value === '3' && (!draw || draw<=1)) { alert('3‑Way mode requires draw/tie odds (>1).'); return false; }
       if (draw && draw<=1){ alert('If provided, draw odds must be > 1'); return false; }
       return true;
+    }
+
+    function applyValueClass(el, value, isPercent){
+      if (!el) return;
+      // reset to base
+      el.className = 'value-pill';
+      if (value === null || value === undefined || isNaN(value)) { el.textContent = '--'; return; }
+      const num = Number(value);
+      if (isPercent){
+        const text = Math.abs(num).toFixed(2) + '%';
+        el.textContent = (num < 0 ? '-' + text : text);
+      } else {
+        const text = 'रु ' + Math.abs(num).toFixed(2);
+        el.textContent = (num < 0 ? '-' + text : text);
+      }
+      if (num > 0) el.classList.add('positive');
+      else if (num < 0) el.classList.add('negative');
     }
 
     function calculate(){
@@ -248,7 +287,7 @@
       const profitPerc2 = (profit2/totalStake)*100;
 
       // 3-way
-      let stake3a, stake3b, stake3d, payout3val, profit3val, profitPerc3val;
+      let stake3a=0, stake3b=0, stake3d=0, payout3val=0, profit3val=0, profitPerc3val=0;
       if (pD>0){
         stake3a = totalStake * (pA / sum3);
         stake3b = totalStake * (pB / sum3);
@@ -271,8 +310,7 @@
 
       // recommendation logic
       let recommendation='--', costbenefit='--';
-      if (drawStakeNeeded === null || !isFinite(drawStakeNeeded)){
-        recommendation='N/A'; costbenefit='N/A';
+      if (drawStakeNeeded === null || !isFinite(drawStakeNeeded)){ recommendation='N/A'; costbenefit='N/A';
       } else {
         if (protectedProfit <= 0 || newProfitPercentage === null || newProfitPercentage <= 0){
           recommendation = '❌ Not Recommended'; costbenefit = 'Protection eliminates profit or yields negative return';
@@ -305,21 +343,19 @@
       $('stakeB').textContent = fmt(stakeB);
       $('totalStk').textContent = fmt(totalStake);
       $('payout').textContent = fmt(payout2);
-      $('profit').textContent = fmt(profit2);
-      $('profitPerc').textContent = profitPerc2.toFixed(2) + '%';
 
-      if (pD>0){
-        $('stake3A').textContent = fmt(stake3a);
-        $('stake3B').textContent = fmt(stake3b);
-        $('stake3D').textContent = fmt(stake3d);
-        $('totalStk3').textContent = fmt(totalStake);
-        $('payout3').textContent = fmt(payout3val);
-        $('profit3').textContent = fmt(profit3val);
-        $('profitPerc3').textContent = profitPerc3val.toFixed(2) + '%';
-      } else {
-        $('stake3A').textContent = 'रु 0.00'; $('stake3B').textContent = 'रु 0.00'; $('stake3D').textContent = 'रु 0.00';
-        $('totalStk3').textContent = 'रु 0.00'; $('payout3').textContent = 'रु 0.00'; $('profit3').textContent = 'रु 0.00'; $('profitPerc3').textContent = '0%';
-      }
+      // color/provide sign for 2-way profit
+      applyValueClass($('profit'), profit2, false);
+      applyValueClass($('profitPerc'), profitPerc2, true);
+
+      // 3-way outputs and coloring (always update the fields so 3-way mode shows result)
+      $('stake3A').textContent = fmt(stake3a);
+      $('stake3B').textContent = fmt(stake3b);
+      $('stake3D').textContent = fmt(stake3d);
+      $('totalStk3').textContent = fmt(totalStake);
+      $('payout3').textContent = fmt(payout3val);
+      applyValueClass($('profit3'), profit3val, false);
+      applyValueClass($('profitPerc3'), profitPerc3val, true);
 
       // draw area
       if (modeSelect.value === '2'){
@@ -327,61 +363,63 @@
           drawArea.classList.remove('hide');
           probDrawTile.classList.remove('hide');
           $('drawProb').textContent = pct(drawProb);
-          $('origProfit').textContent = fmt(profit2);
+          applyValueClass($('origProfit'), profit2, false);
 
-          // draw stake: make it neutral/white (no red)
+          // draw stake: neutral style
           const dsEl = $('drawStakeNeeded');
-          dsEl.textContent = fmt(drawStakeNeeded);
+          dsEl.textContent = isFinite(drawStakeNeeded) && drawStakeNeeded !== null ? fmt(drawStakeNeeded) : '--';
           dsEl.className = 'value-pill';
 
           // protected profit: green if positive, red with minus if negative
-          const ppEl = $('protProfit');
-          if (protectedProfit===null||isNaN(protectedProfit)){
-            ppEl.textContent = '--'; ppEl.className = 'value-pill';
-          } else {
-            const v = Number(protectedProfit);
-            if (v>0){ ppEl.textContent = fmt(v); ppEl.className = 'value-pill positive'; }
-            else if (v<0){ ppEl.textContent = '-' + fmt(Math.abs(v)); ppEl.className = 'value-pill negative'; }
-            else { ppEl.textContent = fmt(0); ppEl.className = 'value-pill'; }
-          }
+          applyValueClass($('protProfit'), protectedProfit, false);
 
-          $('profitReduction').textContent = fmt(profitReduction);
+          $('profitReduction').textContent = isFinite(profitReduction) && profitReduction !== null ? fmt(profitReduction) : '--';
 
-          const newProfitEl = $('newProfitPerc');
-          if (newProfitPercentage===null||isNaN(newProfitPercentage)) newProfitEl.textContent='--';
-          else {
-            const val = Number(newProfitPercentage);
-            const txt = Math.abs(val).toFixed(2) + '%';
-            newProfitEl.textContent = (val<0? '-' + txt : txt);
-            newProfitEl.className = 'value-pill ' + (val>0? 'positive' : (val<0? 'negative':''));
-          }
+          if (newProfitPercentage===null||isNaN(newProfitPercentage)) $('newProfitPerc').textContent='--';
+          else applyValueClass($('newProfitPerc'), newProfitPercentage, true);
 
           // recommendation and costbenefit color changes
-          const recEl = $('recommendation');
-          recEl.textContent = recommendation;
-          if (recommendation.includes('Not Recommended') || recommendation.includes('❌')) recEl.className = 'value-pill negative';
-          else if (recommendation.includes('Maybe Worth It') || recommendation.includes('✅')) recEl.className = 'value-pill positive';
-          else recEl.className = 'value-pill';
-
-          const cbEl = $('costbenefit');
-          cbEl.textContent = costbenefit;
-          if (costbenefit.includes('Low Cost') || costbenefit.includes('Maybe')) cbEl.className = 'value-pill positive';
-          else if (costbenefit.includes('Very High') || costbenefit.includes('High Cost') || costbenefit.includes('eliminates')) cbEl.className = 'value-pill negative';
-          else cbEl.className = 'value-pill';
-
+          const recEl = $('recommendation'); recEl.textContent = recommendation; recEl.className = 'value-pill'; if (recommendation.includes('Not Recommended')) recEl.classList.add('negative'); if (recommendation.includes('Maybe')) recEl.classList.add('positive');
+          const cbEl = $('costbenefit'); cbEl.textContent = costbenefit; cbEl.className = 'value-pill'; if (costbenefit.includes('Low Cost')) cbEl.classList.add('positive'); if (costbenefit.includes('High Cost')||costbenefit.includes('Very High')||costbenefit.includes('eliminates')) cbEl.classList.add('negative');
         } else {
           drawArea.classList.add('hide');
           probDrawTile.classList.add('hide');
         }
+      } else {
+        // in 3-way mode hide drawArea (we already ensured drawOdds required for mode 3)
+        drawArea.classList.add('hide');
       }
 
-      // arb badges
-      $('implied2').parentElement.classList.remove('positive','negative');
-      if (sum2 < 1) { $('arbBadge').textContent = 'Status: 2‑Way arbitrage possible'; }
-      else { $('arbBadge').textContent = 'Status: No 2‑Way arbitrage'; }
-      if (pD>0){ $('implied3').parentElement.classList.remove('positive','negative'); if (sum3 < 1) $('arbBadge').textContent = 'Status: 3‑Way arbitrage possible'; }
+      // Suggest 3-way vs hedging when it's genuinely better (works in both modes)
+      if (pD>0 && sum3 < 1 && isFinite(profit3val) && profit3val > 0 && profit3val > profit2){
+        const delta = profit3val - profit2;
+        const deltaPercPoints = profitPerc3val - profitPerc2;
+        threeWaySuggestText.textContent = `Go 3‑way: extra ${fmt(delta)} (Δ ${deltaPercPoints.toFixed(2)}pp). 3‑way profit ${fmt(profit3val)} — ${profitPerc3val.toFixed(2)}%`;
+        threeWaySuggestion.classList.remove('hide');
+        threeWaySuggestText.className = 'value-pill positive';
+      } else {
+        threeWaySuggestion.classList.add('hide');
+      }
 
-      // min warning wiring
+      // Arb badges
+      if (sum3 < 1) { arbBadge.textContent = 'Status: 3‑Way arbitrage possible'; }
+      else if (sum2 < 1) { arbBadge.textContent = 'Status: 2‑Way arbitrage possible'; }
+      else { arbBadge.textContent = 'Status: No arbitrage detected'; }
+
+      // Suggestions: always show a short checklist after each calculation so user inspects before betting
+      const suggestions = [];
+      suggestions.push('Confirm available liquidity and bet acceptance at both books/exchanges.');
+      suggestions.push('Check account limits, max bet and minimum bet (rounding may change stakes).');
+      suggestions.push('Factor in commissions/fees and payout rounding — small arbs may vanish.');
+      suggestions.push('Place A/B/D bets quickly to avoid odds movement; consider order of execution.');
+      suggestions.push('Verify you have sufficient balance in each book/exchange and available market sizes.');
+      if (minWarning !== '--') suggestions.push(minWarning);
+      suggestions.push('If suggestion recommends 3‑Way, double-check both markets accept the required draw bet size.');
+
+      suggestionsArea.classList.remove('hide');
+      suggestionsText.textContent = suggestions.join('\n\n');
+
+      // min warning wiring (still alert as earlier)
       if (minWarning !== '--') alert(minWarning);
     }
 
